@@ -146,7 +146,7 @@ install:
             isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
             if [ "$isMatchingPattern" -gt 0 ]
             then
-              echo "Found match with pattern:$pattern for INTROSPECTION_DATA:$INTROSPECTION_DATA:"
+              echo "Found match with pattern:$pattern on pid:$JAVA_PID for INTROSPECTION_DATA:$INTROSPECTION_DATA:"
             fi
           done
           EOT
