@@ -62,7 +62,8 @@ install:
         - task: init
         - task: get-introspector
         - task: verify-pre-requisites
-        - task: install
+        - task: install-instrument-script
+        - task: execute-instrument-script
 
     init:
       cmds:
@@ -127,7 +128,7 @@ install:
             fi
           done
 
-    install:
+    install-instrument-script:
       cmds:
         - |
           if [ -f /etc/newrelic-java/auto-instrument.sh ]; then
@@ -142,6 +143,19 @@ install:
           for JAVA_PID in "${ALL_JAVA_PIDS[@]}"
           do
             INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
-            echo "INTROSPECTION_DATA:"$INTROSPECTION_DATA
+            isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
+            if [ "$isJavaLsiRunning" -gt 0 ]
+            then
+              echo "Found match with pattern:$pattern for INTROSPECTION_DATA:$INTROSPECTION_DATA:"
+            fi
           done
           EOT
+<<<<<<< HEAD
+=======
+          sudo chmod 700 /etc/newrelic-infra/auto-instrument.sh
+
+    execute-instrument-script:
+      cmds:
+        - |
+          /etc/newrelic-infra/auto-instrument.sh {{.NEW_RELIC_LICENSE_KEY}} {{.NEW_RELIC_REGION}} {{.HOSTNAME}} 'catalina'
+>>>>>>> ba88fb51 (implement pattern match)
