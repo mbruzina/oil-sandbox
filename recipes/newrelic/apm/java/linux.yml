@@ -86,8 +86,8 @@ install:
               sleep 1
             fi
           done
-          if [ -f /etc/newrelic-java/nri-lsi-java ]; then
-            rm -f /etc/newrelic-java/nri-lsi-java
+          if [ -f /usr/bin/nri-lsi-java ]; then
+            rm -f /usr/bin/nri-lsi-java
           fi
           cd /etc/newrelic-java
           isYumInstalled=$(which yum 2>&1 || true)
@@ -134,10 +134,10 @@ install:
           local region=$2
           local appName=$3
           local pattern=$4
-          $ALL_JAVA_PIDS=$(sudo /etc/newrelic-java/nri-lsi-java -list | tr -d '[]')
+          $ALL_JAVA_PIDS=$(sudo nri-lsi-java -list | tr -d '[]')
           for JAVA_PID in "${ALL_JAVA_PIDS[@]}"
           do
-            INTROSPECTION_DATA=$(sudo /etc/newrelic-java/nri-lsi-java -introspect ${JAVA_PID})
+            INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
             echo "INTROSPECTION_DATA:"$INTROSPECTION_DATA
           done
           EOT
