@@ -86,11 +86,15 @@ install:
               sleep 1
             fi
           done
-          if [ -f /usr/bin/nri-lsi-java ]; then
-            rm -f /usr/bin/nri-lsi-java
-          fi
-          cd /etc/newrelic-java
           isYumInstalled=$(which yum 2>&1 || true)
+          cd /etc/newrelic-java
+          if [ -f /usr/bin/nri-lsi-java ]; then
+            if [[ -n "$isYumInstalled" ]]; then
+              sudo yum remove nri-introspector-java.x86_64
+            else
+              sudo apt-get remove nri-introspector-java.x86_64
+            fi
+          fi
           if [[ -n "$isYumInstalled" ]]; then
             curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm
             yum install -y -q nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm 2> /dev/null || true
@@ -134,7 +138,7 @@ install:
           local region=$2
           local appName=$3
           local pattern=$4
-          $ALL_JAVA_PIDS=$(sudo nri-lsi-java -list | tr -d '[]')
+          ALL_JAVA_PIDS=$(sudo nri-lsi-java -list | tr -d '[]')
           for JAVA_PID in "${ALL_JAVA_PIDS[@]}"
           do
             INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
