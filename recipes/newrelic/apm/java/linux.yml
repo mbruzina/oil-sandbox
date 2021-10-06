@@ -90,9 +90,9 @@ install:
           cd /etc/newrelic-java
           if [ -f /usr/bin/nri-lsi-java ]; then
             if [[ -n "$isYumInstalled" ]]; then
-              sudo yum remove nri-introspector-java.x86_64
+              sudo yum remove -y -q nri-introspector-java.x86_64
             else
-              sudo apt-get remove nri-introspector-java.x86_64
+              sudo apt-get remove -y -qq nri-introspector-java.x86_64
             fi
           fi
           if [[ -n "$isYumInstalled" ]]; then
