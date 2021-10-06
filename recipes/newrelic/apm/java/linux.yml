@@ -151,11 +151,19 @@ install:
           done
           EOT
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
           sudo chmod 700 /etc/newrelic-infra/auto-instrument.sh
+=======
+          sudo chmod 700 /etc/newrelic-java/auto-instrument.sh
+>>>>>>> 19e08681 (fix path)
 
     execute-instrument-script:
       cmds:
         - |
+<<<<<<< HEAD
           /etc/newrelic-infra/auto-instrument.sh {{.NEW_RELIC_LICENSE_KEY}} {{.NEW_RELIC_REGION}} {{.HOSTNAME}} 'catalina'
 >>>>>>> ba88fb51 (implement pattern match)
+=======
+          /etc/newrelic-java/auto-instrument.sh {{.NEW_RELIC_LICENSE_KEY}} {{.NEW_RELIC_REGION}} {{.HOSTNAME}} 'catalina'
+>>>>>>> 19e08681 (fix path)
