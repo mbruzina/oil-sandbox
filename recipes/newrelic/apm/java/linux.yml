@@ -74,12 +74,15 @@ install:
     get-introspector:
       cmds:
         - |
+          echo "Retrieving Java Introspector..."
           while :; do
-            isListRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
-            if [ "$IS_TOOL_INSTALLED" -eq 0 ]
+            isJavaLsiRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
+            if [ "$isJavaLsiRunning" -eq 0 ]
             then
+              echo "Java LSI is not running"
               break
             else
+              echo "Waiting on Java LSI to finish running..."
               sleep 1
             fi
           done
