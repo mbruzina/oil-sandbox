@@ -135,10 +135,10 @@ install:
             rm -f /etc/newrelic-java/auto-instrument.sh
           fi
           tee -a /etc/newrelic-java/auto-instrument.sh > /dev/null <<"EOT"
-          local license=$1
-          local region=$2
-          local appName=$3
-          local pattern=$4
+          license=$1
+          region=$2
+          appName=$3
+          pattern=$4
           ALL_JAVA_PIDS=$(sudo nri-lsi-java -list | tr -d '[]')
           for JAVA_PID in "${ALL_JAVA_PIDS[@]}"
           do
