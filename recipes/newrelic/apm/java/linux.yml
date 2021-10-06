@@ -67,7 +67,7 @@ install:
     init:
       cmds:
         - |
-          if [ -f /etc/newrelic-java ]; then
+          if [ ! -f /etc/newrelic-java ]; then
             mkdir -p /etc/newrelic-java
           fi
 
