@@ -72,12 +72,19 @@ install:
           fi
 
     get-introspector:
-      label: "Retrieving Java Introspector..."
       cmds:
         - |
-          introspector=$(which nri-lsi-java)
-          if [[ -n "$introspector" ]]; then
-            exit 0
+          while :; do
+            isListRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
+            if [ "$IS_TOOL_INSTALLED" -eq 0 ]
+            then
+              break
+            else
+              sleep 1
+            fi
+          done
+          if [ -f /etc/newrelic-java/nri-lsi-java ]; then
+            rm -f /etc/newrelic-java/nri-lsi-java
           fi
           cd /etc/newrelic-java
           isYumInstalled=$(which yum 2>&1 || true)
