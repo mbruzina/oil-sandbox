@@ -147,7 +147,8 @@ install:
             if [ "$isMatchingPattern" -gt 0 ]
             then
               echo "Found match with pattern:$pattern on pid:$JAVA_PID for INTROSPECTION_DATA:$INTROSPECTION_DATA:"
-              sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region
+              output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
+              echo "attach output:$output"
             fi
           done
           EOT
