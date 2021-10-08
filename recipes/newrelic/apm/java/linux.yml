@@ -88,18 +88,12 @@ install:
             fi
           done
           isYumInstalled=$(which yum 2>&1 || true)
-          cd /etc/newrelic-java
-          if [ -f /usr/bin/nri-lsi-java ]; then
-            if [[ -n "$isYumInstalled" ]]; then
-              sudo yum remove -y -q nri-introspector-java.x86_64
-            else
-              sudo apt-get remove -y -qq nri-introspector-java.x86_64
-            fi
-          fi
           if [[ -n "$isYumInstalled" ]]; then
+            yum remove -y -q nri-introspector-java.x86_64 2> /dev/null
             curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm
             yum install -y -q nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm 2> /dev/null || true
           else
+            apt-get remove -y -qq nri-introspector-java.x86_64 2> /dev/null
             curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java_0.1.0_SNAPSHOT-2_amd64.deb
             apt-get install -y -qq ./nri-introspector-java_0.1.0_SNAPSHOT-2_amd64.deb 2> /dev/null || true
           fi
