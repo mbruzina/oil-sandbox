@@ -16,6 +16,8 @@ installTargets:
     kernelArch: x86_64
     platformFamily: "debian"
 
+dependencies:
+  - infrastructure-agent-installer
 
 keywords:
   - Apm
@@ -23,29 +25,40 @@ keywords:
 
 logMatch:
   - name: tomcat-versioned-catalina
-    file: /opt/tomcat/*tomcat*/logs/catalina.out
-  - name: tomcat-catalina-opt
-    file: /opt/*tomcat*/logs/catalina.out
-  - name: tomcat-catalina-var
-    file: /var/log/*tomcat*/catalina.out
+    file: /opt/tomcat/*tomcat*/logs/*.log
 
 processMatch:
-  - java.*org\.apache\.catalina\.startup\.Bootstrap
-  - java.*wildfly.*jboss\-modules\.jar
-  - java.*jetty.*start\.jar
+  - java.*org.apache.catalina.startup.Bootstrap
 
 preInstall:
   requireAtDiscovery: |
-    # must be root user
-    USER=$(whoami)
-    if [[ "$USER" != "root" ]]; then
+    user=$(whoami)
+    if [[ "$user" != "root" ]]; then
       echo -e "This script must be run as root." >&2
       exit 132
     fi
+
+    cutInstalled=$(which cut 2> /dev/null)
+    if [[ -z "$cutInstalled" ]]; then
+      echo -e "This installation recipe for the New Relic Java Agent on Linux requires 'cut' to be installed." >&2
+      exit 132
+    fi
+
+    # Map of tool names to the associated error code
+    required_tools_and_error_codes="grep:132 cat:132 tee:132"
+    for tuple in $required_tools_and_error_codes; do
+      tool=$(echo ${tuple} |cut -d':' -f1)
+      code=$(echo ${tuple} |cut -d':' -f2)
+      toolInstalled=$(which ${tool} | wc -l)
+      if [[ "$toolInstalled" -eq 0 ]]; then
+        echo -e "This installation recipe for the New Relic Java Agent on Linux requires '${tool}' to be installed." >&2
+        exit ${code}
+      fi
+    done
+
     exit 0
 
-
-validationNrql: "SELECT count(*) FROM ApplicationAgentContext WHERE host LIKE '{{.HOSTNAME}}%' SINCE 10 minutes AGO"
+validationNrql: "SELECT count(*) from Transaction WHERE host like '{{.HOSTNAME}}%' facet entityGuid since 10 minutes ago"
 
 successLinkConfig:
   type: EXPLORER
@@ -61,9 +74,9 @@ install:
       cmds:
         - task: init
         - task: get-introspector
-        - task: verify-pre-requisites
         - task: install-instrument-script
         - task: execute-instrument-script
+        - task: add-reattach-flex-integration
 
     init:
       cmds:
@@ -76,90 +89,86 @@ install:
       cmds:
         - |
           echo "Retrieving Java Introspector..."
+          isYumInstalled=$(which yum 2>&1 || true)
+          if [[ -n "$isYumInstalled" ]]; then
+            curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm
+            yum install -y -q nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm 2> /dev/null || true
+          else
+            curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java_0.1.0_SNAPSHOT-2_amd64.deb
+            apt-get install -y -qq ./nri-introspector-java_0.1.0_SNAPSHOT-2_amd64.deb 2> /dev/null || true
+          fi
           while :; do
             isJavaLsiRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
             if [ "$isJavaLsiRunning" -eq 0 ]
             then
-              echo "Java LSI is not running"
               break
             else
-              echo "Waiting on Java LSI to finish running..."
               sleep 1
-            fi
-          done
-          isYumInstalled=$(which yum 2>&1 || true)
-          if [[ -n "$isYumInstalled" ]]; then
-            yum remove -y -q nri-introspector-java.x86_64 2> /dev/null
-            curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm
-            yum install -y -q nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm 2> /dev/null || true
-          else
-            apt-get remove -y -qq nri-introspector-java.x86_64 2> /dev/null
-            curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java_0.1.0_SNAPSHOT-2_amd64.deb
-            apt-get install -y -qq ./nri-introspector-java_0.1.0_SNAPSHOT-2_amd64.deb 2> /dev/null || true
-          fi
-
-    verify-pre-requisites:
-      cmds:
-        - |
-          red='\033[0;31m'
-          noColor='\033[0m'
-
-          cutInstalled=$(which cut 2> /dev/null)
-          if [[ -z "$cutInstalled" ]]; then
-            echo -e "${red}This installation recipe for the New Relic Java Agent on Linux requires 'cut' to be installed.${noColor}" >&2
-            exit 22
-          fi
-
-          # Map of tool names to the associated error code
-          required_tools_and_error_codes="grep:10 sed:11 awk:12 cat:13 tee:14 touch:15 mktemp:22 readlink:22 realpath:22 tr:23 td:24"
-          for tuple in $required_tools_and_error_codes; do
-            tool=$(echo ${tuple} |cut -d':' -f1)
-            code=$(echo ${tuple} |cut -d':' -f2)
-            toolInstalled=$(which ${tool} | wc -l)
-            if [[ "$toolInstalled" -eq 0 ]]; then
-              echo -e "${red}This installation recipe for the New Relic Java Agent on Linux requires '${tool}' to be installed.${noColor}" >&2
-              exit ${code}
             fi
           done
 
     install-instrument-script:
       cmds:
         - |
-          if [ -f /etc/newrelic-java/auto-instrument.sh ]; then
-            rm -f /etc/newrelic-java/auto-instrument.sh
+          if [ -f /etc/newrelic-java/java-dynamic-attach.sh ]; then
+            rm -f /etc/newrelic-java/java-dynamic-attach.sh
           fi
-          tee -a /etc/newrelic-java/auto-instrument.sh > /dev/null <<"EOT"
-          license=$1
-          region=$2
-          appName=$3
-          pattern=$4
+          tee -a /etc/newrelic-java/java-dynamic-attach.sh > /dev/null <<"EOT"
+          #!/bin/bash
+          triggeredByFlex=$1
+          license={{.NEW_RELIC_LICENSE_KEY}}
+          region={{.NEW_RELIC_REGION}}
+          appName='{{.HOSTNAME}}-tomcat-integrationd'
+          pattern='catalina'
           ALL_JAVA_PIDS=$(sudo nri-lsi-java -list | tr -d '[]')
-          for JAVA_PID in "${ALL_JAVA_PIDS[@]}"
+          NEW_PIDS=""
+          for JAVA_PID in "${ALL_JAVA_PIDS[@]}";
           do
             INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
             isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
             if [ "$isMatchingPattern" -gt 0 ]
             then
-              echo "Found match with pattern:$pattern on pid:$JAVA_PID for INTROSPECTION_DATA:$INTROSPECTION_DATA:"
               output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
-              echo "attach output:$output"
+              already_attached=$(echo $output | grep 'The New Relic agent is already attached to this process' | wc -l)
+              if [ $already_attached -eq 0 ]; then
+                NEW_PIDS+="$JAVA_PID\t$appName"
+              fi
             fi
           done
+          if [ -z $NEW_PIDS ]; then
+            exit 0
+          else
+            echo -e $NEW_PIDS
+          fi
           EOT
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-          sudo chmod 700 /etc/newrelic-infra/auto-instrument.sh
-=======
-          sudo chmod 700 /etc/newrelic-java/auto-instrument.sh
->>>>>>> 19e08681 (fix path)
+          sudo chmod 700 /etc/newrelic-java/java-dynamic-attach.sh
 
     execute-instrument-script:
       cmds:
         - |
-<<<<<<< HEAD
-          /etc/newrelic-infra/auto-instrument.sh {{.NEW_RELIC_LICENSE_KEY}} {{.NEW_RELIC_REGION}} {{.HOSTNAME}} 'catalina'
->>>>>>> ba88fb51 (implement pattern match)
-=======
-          /etc/newrelic-java/auto-instrument.sh {{.NEW_RELIC_LICENSE_KEY}} {{.NEW_RELIC_REGION}} {{.HOSTNAME}} 'catalina'
->>>>>>> 19e08681 (fix path)
+          /etc/newrelic-java/java-dynamic-attach.sh false
+
+
+    add-reattach-flex-integration:
+        cmds:
+        - |
+          if [ -f /etc/newrelic-infra/integrations.d/java-reattach-config.yml ]; then
+            rm -f /etc/newrelic-infra/integrations.d/java-reattach-config.yml
+          fi
+          tee -a /etc/newrelic-infra/integrations.d/java-reattach-config.yml > /dev/null <<"EOT"
+          integrations:
+            - name: nri-flex
+              interval: 60s
+              timeout: 30s
+              config:
+                name: java-agent-persistence
+                apis:
+                  - name: dynamicAttachJavaAgent
+                    commands:
+                    - run: /etc/newrelic-java/java-dynamic-attach.sh true
+                      shell: /bin/bash
+                      split: horizontal
+                      set_header: [java_pid, app_name]
+                      split_by: \s+
+          EOT
+          sudo chmod 700 /etc/newrelic-infra/integrations.d/java-reattach-config.yml
