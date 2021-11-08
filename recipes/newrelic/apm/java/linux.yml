@@ -170,7 +170,7 @@ install:
                "metrics": [
                  {
                    "event_type": "JavaDynamicAttachSample",
-                   "provider": "com.newrelic.virtuoso"
+                   "provider": "com.newrelic.virtuoso",
                    "provider.executableName": "message"
                  }
                ]
