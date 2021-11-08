@@ -168,39 +168,39 @@ install:
           pattern='org.apache.catalina.startup.Bootstrap'
 
           # gives list of all PIDS
-          touch detected_pids
-          sudo nri-lsi-java -list | tr -d '[]' | xargs >> detected_pids
+          touch .pids/detected_pids
+          sudo nri-lsi-java -list | tr -d '[]' | xargs >> .pids/detected_pids
 
           # finds dead processes
-          touch dead_pids
-          comm -13 detected_pids saved_pids >> dead_pids
+          touch .pids/dead_pids
+          comm -13 .pids/detected_pids .pids/saved_pids >> .pids/dead_pids
 
           # finds new processes
-          touch new_pids
-          comm -23 detected_pids saved_pids >> new_pids
+          touch .pids/new_pids
+          comm -23 .pids/detected_pids .pids/saved_pids >> .pids/new_pids
 
-          rm detected_pids
+          rm .pids/detected_pids
 
           # instrument new PIDs
-          for JAVA_PID in $(cat new_pids);
+          for JAVA_PID in $(cat .pids/new_pids);
           do
             INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
             isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
             if [ "$isMatchingPattern" -gt 0 ]; then
               output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
-              echo $JAVA_PID >> saved_pids
+              echo $JAVA_PID >> .pids/saved_pids
             fi
           done
 
           # remove dead PIDs
-          for DEAD_PID in $(cat dead_pids);
+          for DEAD_PID in $(cat .pids/dead_pids);
           do
-            cat $saved_pids | tr -d $DEAD_PID
+            cat .pids/$saved_pids | tr -d $DEAD_PID
           done
 
           # cleanup temp files, return empty json
-          rm dead_pids
-          rm new_pids
+          rm .pids/dead_pids
+          rm .pids/new_pids
           echo {}
           EOT
           sudo chmod 700 /etc/newrelic-java/dynamic-attach.sh
