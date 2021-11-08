@@ -178,8 +178,6 @@ install:
           EOF
           }
 
-
-
           license={{.NEW_RELIC_LICENSE_KEY}}
           region={{.NEW_RELIC_REGION}}
           appName='{{.HOSTNAME}}-nr-app'
@@ -189,7 +187,7 @@ install:
           echo $(build_stdout_json "touching detected_pids")
           touch .pids/detected_pids
           echo $(build_stdout_json "writing detected_pids")
-          sudo nri-lsi-java -list | tr -d '[]' | xargs >> .pids/detected_pids
+          nri-lsi-java -list | tr -d '[]' | xargs >> .pids/detected_pids
 
           # finds dead processes
           echo $(build_stdout_json "touching dead_pids")
@@ -210,11 +208,11 @@ install:
           echo $(build_stdout_json "iterating over new_pids")
           for JAVA_PID in $(cat .pids/new_pids);
           do
-            INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
+            INTROSPECTION_DATA=$(nri-lsi-java -introspect ${JAVA_PID})
             isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
             if [ "$isMatchingPattern" -gt 0 ]; then
               echo $(build_stdout_json "attaching new process ${JAVA_PID}")
-              output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
+              output=$(nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
               echo $(build_stdout_json "saving ${JAVA_PID}")
               echo $JAVA_PID >> .pids/saved_pids
             else
