@@ -160,77 +160,24 @@ install:
 
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
           #!/bin/bash
-          build_stdout_json() {
-            message=$1
-            cat << EOF
-            {
-               "name": "java-dynamic-attach",
-               "protocol_version": "1",
-               "integration_version": "1.0.0",
-               "metrics": [
-                 {
-                   "event_type": "JavaDynamicAttachSample",
-                   "provider": "com.newrelic.virtuoso",
-                   "provider.executableName": "$message"
-                 }
-               ]
-            }
-          EOF
-          }
 
           license={{.NEW_RELIC_LICENSE_KEY}}
           region={{.NEW_RELIC_REGION}}
           appName='{{.HOSTNAME}}-nr-app'
           pattern='org.apache.catalina.startup.Bootstrap'
 
-          # gives list of all PIDS
-          echo $(build_stdout_json "touching detected_pids")
-          touch .pids/detected_pids
-          echo $(build_stdout_json "writing detected_pids")
-          sudo nri-lsi-java -list | tr -d '[]' | xargs >> .pids/detected_pids
-
-          # finds dead processes
-          echo $(build_stdout_json "touching dead_pids")
-          touch .pids/dead_pids
-          echo $(build_stdout_json "finding dead_pids")
-          comm -13 .pids/detected_pids .pids/saved_pids >> .pids/dead_pids
-
-          # finds new processes
-          echo $(build_stdout_json "touching new_pids")
-          touch .pids/new_pids
-          echo $(build_stdout_json "finding new_pids")
-          comm -23 .pids/detected_pids .pids/saved_pids >> .pids/new_pids
-
-          echo $(build_stdout_json "removing detected_pids")
-          rm .pids/detected_pids
+          sudo nri-lsi-java -list | tr -d '[]' | xargs >> .pids/saved_pids
 
           # instrument new PIDs
-          echo $(build_stdout_json "iterating over new_pids")
-          for JAVA_PID in $(cat .pids/new_pids);
+          for JAVA_PID in $(cat .pids/saved_pids);
           do
             INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
             isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
             if [ "$isMatchingPattern" -gt 0 ]; then
-              echo $(build_stdout_json "attaching new process ${JAVA_PID}")
               output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
-              echo $(build_stdout_json "saving ${JAVA_PID}")
-              echo $JAVA_PID >> .pids/saved_pids
-            else
-              echo $(build_stdout_json "${JAVA_PID} did not match pattern ${pattern}")
             fi
           done
 
-          # remove dead PIDs
-          echo $(build_stdout_json "removing dead_pids")
-          for DEAD_PID in $(cat .pids/dead_pids);
-          do
-            cat .pids/$saved_pids | tr -d $DEAD_PID
-          done
-
-          # cleanup temp files, return empty json
-          echo $(build_stdout_json "removing temp_files")
-          rm .pids/dead_pids
-          rm .pids/new_pids
           echo {}
           EOT
           sudo chmod 700 /etc/newrelic-java/dynamic-attach.sh
