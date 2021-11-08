@@ -153,9 +153,7 @@ install:
             rm -f /etc/newrelic-java/dynamic-attach.sh
           fi
 
-          sudo rm -rf /etc/newrelic-java/.pids
-          sudo mkdir -p /etc/newrelic-java/.pids
-          sudo touch /etc/newrelic-java/.pids/saved_pids
+          sudo touch -p /etc/newrelic-java/.pids
           sudo chmod -R 700 /etc/newrelic-java/.pids
 
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
@@ -184,36 +182,35 @@ install:
           pattern='org.apache.catalina.startup.Bootstrap'
 
           # just in case we have no saved pids
-          if [ !-f /etc/newrelic-java/.pids/saved_pids ]; then
-            sudo mkdir -p /etc/newrelic-java/.pids
-            sudo touch /etc/newrelic-java/.pids/saved_pids
+          if [ ! -f /etc/newrelic-java/.pids ]; then
+            sudo touch /etc/newrelic-java/.pids
             sudo chmod -R 700 /etc/newrelic-java/.pids
           fi
 
           # gives list of all PIDS
           echo $(build_stdout_json "touching detected_pids")
-          sudo touch .pids/detected_pids
+          sudo touch .detected_pids
           echo $(build_stdout_json "writing detected_pids")
-          sudo nri-lsi-java -list | tr -d '[]' | xargs >> .pids/detected_pids
+          sudo nri-lsi-java -list | tr -d '[]' | xargs >> .detected_pids
 
           # finds dead processes
           echo $(build_stdout_json "touching dead_pids")
-          sudo touch .pids/dead_pids
+          sudo touch .dead_pids
           echo $(build_stdout_json "finding dead_pids")
-          sudo comm -13 .pids/detected_pids .pids/saved_pids >> .pids/dead_pids
+          sudo comm -13 .detected_pids .pids >> .dead_pids
 
           # finds new processes
           echo $(build_stdout_json "touching new_pids")
-          sudo touch .pids/new_pids
+          sudo touch .new_pids
           echo $(build_stdout_json "finding new_pids")
-          sudo comm -23 .pids/detected_pids .pids/saved_pids >> .pids/new_pids
+          sudo comm -23 .detected_pids .pids >> .new_pids
 
           echo $(build_stdout_json "removing detected_pids")
-          sudo rm .pids/detected_pids
+          sudo rm .detected_pids
 
           # instrument new PIDs
           echo $(build_stdout_json "iterating over new_pids")
-          for JAVA_PID in $(cat .pids/new_pids);
+          for JAVA_PID in $(cat .new_pids);
           do
             INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
             isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
@@ -221,7 +218,7 @@ install:
               echo $(build_stdout_json "attaching new process ${JAVA_PID}")
               output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
               echo $(build_stdout_json "saving ${JAVA_PID}")
-              sudo echo $JAVA_PID >> .pids/saved_pids
+              sudo echo $JAVA_PID >> .pids
             else
               echo $(build_stdout_json "${JAVA_PID} did not match pattern ${pattern}")
             fi
@@ -229,15 +226,15 @@ install:
 
           # remove dead PIDs
           echo $(build_stdout_json "removing dead_pids")
-          for DEAD_PID in $(cat .pids/dead_pids);
+          for DEAD_PID in $(cat .dead_pids);
           do
-            sudo cat .pids/$saved_pids | tr -d $DEAD_PID
+            sudo cat .pids| tr -d $DEAD_PID
           done
 
           # cleanup temp files, return empty json
           echo $(build_stdout_json "removing temp_files")
-          sudo rm .pids/dead_pids
-          sudo rm .pids/new_pids
+          sudo rm .dead_pids
+          sudo rm .new_pids
           echo {}
           EOT
           sudo chmod 700 /etc/newrelic-java/dynamic-attach.sh
