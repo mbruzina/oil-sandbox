@@ -250,7 +250,7 @@ install:
             - name: java-dynamic-attach
               exec: ./dynamic-attach.sh
               working_dir: /etc/newrelic-java
-              interval: 20s
+              interval: 300s
               integration_user: root
 
           EOT
