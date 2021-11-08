@@ -161,21 +161,22 @@ install:
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
           #!/bin/bash
           build_stdout_json() {
-          message=$1
-          echo
-          "{
-             "name": "java-dynamic-attach",
-             "protocol_version": "1",
-             "integration_version": "1.0.0",
-             "metrics": [
-               {
-                 "event_type": "JavaDynamicAttachSample",
-                 "provider": "com.newrelic.virtuoso"
-                 "provider.executableName": $message
-               }
-             ]
-           }
-          }"
+            message=$1
+            echo
+            "{
+               "name": "java-dynamic-attach",
+               "protocol_version": "1",
+               "integration_version": "1.0.0",
+               "metrics": [
+                 {
+                   "event_type": "JavaDynamicAttachSample",
+                   "provider": "com.newrelic.virtuoso"
+                   "provider.executableName": $message
+                 }
+               ]
+             }
+            }"
+          }
 
 
 
