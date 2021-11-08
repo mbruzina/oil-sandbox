@@ -162,7 +162,7 @@ install:
           #!/bin/bash
           build_stdout_json() {
             message=$1
-            cat <<EOT
+            cat << EOF
             {
                "name": "java-dynamic-attach",
                "protocol_version": "1",
@@ -176,7 +176,7 @@ install:
                ]
              }
            }
-          EOT
+          EOF
           }
 
 
