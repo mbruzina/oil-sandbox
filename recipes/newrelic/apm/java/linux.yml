@@ -154,7 +154,7 @@ install:
           fi
 
           sudo touch /etc/newrelic-java/.pids
-          sudo chmod -R 700 /etc/newrelic-java/.pids
+          sudo chmod -R 755 /etc/newrelic-java/.pids
 
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
           #!/bin/bash
@@ -184,7 +184,7 @@ install:
           # just in case we have no saved pids
           if [ ! -f /etc/newrelic-java/.pids ]; then
             sudo touch /etc/newrelic-java/.pids
-            sudo chmod -R 700 /etc/newrelic-java/.pids
+            sudo chmod -R 755 /etc/newrelic-java/.pids
           fi
 
           # gives list of all PIDS
@@ -237,7 +237,7 @@ install:
           sudo rm .new_pids
           echo {}
           EOT
-          sudo chmod 700 /etc/newrelic-java/dynamic-attach.sh
+          sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
 
     add-on-host-integration:
       cmds:
@@ -250,6 +250,7 @@ install:
             - name: java-dynamic-attach
               exec: /etc/newrelic-java/dynamic-attach.sh
               interval: 60s
+              integration_user: root
 
           EOT
-          sudo chmod 700 /etc/newrelic-infra/integrations.d/java-dynamic-attach-config.yml
+          sudo chmod 755 /etc/newrelic-infra/integrations.d/java-dynamic-attach-config.yml
