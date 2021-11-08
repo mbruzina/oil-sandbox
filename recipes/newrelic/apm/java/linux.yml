@@ -176,6 +176,7 @@ install:
           EOF
           }
 
+          sudo rm -f /etc/newrelic-java/.available
           license={{.NEW_RELIC_LICENSE_KEY}}
           region={{.NEW_RELIC_REGION}}
           appName='{{.HOSTNAME}}-nr-app'
@@ -237,6 +238,7 @@ install:
           echo $(build_stdout_json "removing temp_files")
           sudo rm .dead_pids
           sudo rm .new_pids
+          sudo touch /etc/newrelic-java/.available
           echo {}
           EOT
           sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
@@ -254,6 +256,8 @@ install:
               working_dir: /etc/newrelic-java
               interval: 300s
               integration_user: root
+              when:
+                file_exists: /etc/newrelic-java/.available
 
           EOT
           sudo chmod 755 /etc/newrelic-infra/integrations.d/java-dynamic-attach-config.yml
