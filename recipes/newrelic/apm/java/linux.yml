@@ -58,7 +58,7 @@ preInstall:
 
     exit 0
 
-validationNrql: "SELECT count(*) from Transaction WHERE host like '{{.HOSTNAME}}%' facet entityGuid since 10 minutes ago"
+validationNrql: "SELECT count(*) from JvmMetadataSummary WHERE sendingAccount = {{.NEW_RELIC_ACCOUNT_ID}} since 10 minutes ago"
 
 successLinkConfig:
   type: EXPLORER
@@ -153,56 +153,106 @@ install:
             rm -f /etc/newrelic-java/dynamic-attach.sh
           fi
 
-          if [ -d /etc/newrelic-java/.pids ]; then
-            rm -rf /etc/newrelic-java/.pids
-            mkdir -p /etc/newrelic-java/.pids
-            chmod -R 700 /etc/newrelic-java/.pids
-          fi
+          sudo touch /etc/newrelic-java/.pids
+          sudo chmod -R 755 /etc/newrelic-java/.pids
+
+          echo "account id?: " {{.NEW_RELIC_ACCOUNT_ID}}
 
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
           #!/bin/bash
-          license={{.NEW_RELIC_LICENSE_KEY}}
-          region={{.NEW_RELIC_REGION}}
-          appName='{{.HOSTNAME}}-nr-app'
-          pattern='org.apache.catalina.startup.Bootstrap'
 
-          # gives list of all PIDS
-          touch detected_pids
-          sudo nri-lsi-java -list | tr -d '[]' | xargs >> detected_pids
+          isJavaLsiRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
+          if [ "$isJavaLsiRunning" -eq 0 ]; then
+            (exit 0)
+          fi
 
-          # finds dead processes
-          touch dead_pids
-          comm -13 detected_pids saved_pids >> dead_pids
+          # just in case we have no saved pids
+          if [ ! -f /etc/newrelic-java/.pids ]; then
+            sudo touch /etc/newrelic-java/.pids
+            sudo chmod -R 755 /etc/newrelic-java/.pids
+          fi
 
-          # finds new processes
-          touch new_pids
-          comm -23 detected_pids saved_pids >> new_pids
-
-          rm detected_pids
-
-          # instrument new PIDs
-          for JAVA_PID in $(cat new_pids);
-          do
-            INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
-            isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
-            if [ "$isMatchingPattern" -gt 0 ]; then
-              output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
-              echo $JAVA_PID >> saved_pids
+          isDockerRunning=$(sudo ps aux | grep docker | grep -v grep | wc -l)
+          if [ $isDockerRunning -gt 0 ]; then
+            # just in case this is left over
+            if [ -f /etc/newrelic-java/.pids_in_docker ]; then
+              rm /etc/newrelic-java/.pids_in_docker
             fi
-          done
+            touch /etc/newrelic-java/.pids_in_docker
 
-          # remove dead PIDs
-          for DEAD_PID in $(cat dead_pids);
-          do
-            cat $saved_pids | tr -d $DEAD_PID
-          done
+            for CONTAINER in $(docker ps -q);
+            do
+              docker top $CONTAINER | awk '{print $2}' | sed '1d' >> /etc/newrelic-java/.pids_in_docker
+            done
+            sort -o /etc/newrelic-java/.pids_in_docker /etc/newrelic-java/.pids_in_docker
+          fi
 
-          # cleanup temp files, return empty json
-          rm dead_pids
-          rm new_pids
-          echo {}
+          sudo touch /etc/newrelic-java/.detected_pids
+          sudo chmod 755 /etc/newrelic-java/.detected_pids
+          sudo nri-lsi-java -list | tr "," "\n" | tr -d "[ " | tr -d " ]" >> /etc/newrelic-java/.detected_pids
+          sudo sort -o /etc/newrelic-java/.detected_pids /etc/newrelic-java/.detected_pids
+
+          # if differences in state are detected, swap pid file with detected and attempt to attach
+          new_ids=$(sudo comm -3 /etc/newrelic-java/.detected_pids /etc/newrelic-java/.pids | wc -l)
+          if [[ $new_ids -gt 0 ]]; then
+            license={{.NEW_RELIC_LICENSE_KEY}}
+            region={{.NEW_RELIC_REGION}}
+            appName='{{.HOSTNAME}}-nr-app'
+            pattern='org.apache.catalina.startup.Bootstrap'
+
+            sudo rm /etc/newrelic-java/.pids
+            sudo mv /etc/newrelic-java/.detected_pids /etc/newrelic-java/.pids
+            for JAVA_PID in $(sudo cat /etc/newrelic-java/.pids);
+            do
+              INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
+              isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
+              if [ "$isMatchingPattern" -gt 0 ]; then
+                if [ -f /etc/newrelic-java/.pids_in_docker ]; then
+                  # check if docker_pid exists, then check if pid is on a container
+                  if [[ "$JAVA_PID" == "$(cat /etc/newrelic-java/.pids_in_docker | grep $JAVA_PID | grep -v grep)" ]]; then
+                    CONTAINER_ID=$(sudo docker ps -q | xargs sudo docker inspect --format '{{"{{"}}.State.Pid{{"}}"}}, {{"{{"}}.ID{{"}}"}}' | sed  -n -e "s|$JAVA_PID, ||p")
+                    if [[ $CONTAINER_ID ]]; then
+                      appName={{.HOSTNAME}}:$(sudo docker inspect --format '{{"{{"}}.Name{{"}}"}}' $CONTAINER_ID | tr -d '/')
+                      echo "Running Tomcat process detected in container '$appName' ($CONTAINER_ID)"
+                      OS_DETAILS=$(sudo docker exec $CONTAINER_ID sh -c "uname -a")
+                      if [[ $OS_DETAILS ]]; then
+                        if [[ $(echo $OS_DETAILS | grep -i 'ubuntu' | grep -v grep | wc -l) -gt 0 || $(echo $OS_DETAILS | grep -i 'debian' | grep -v grep | wc -l) -gt 0 ]]; then
+                          sudo docker exec $CONTAINER_ID sh -c "curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java_0.1.0_SNAPSHOT-2_amd64.deb"
+                          sudo docker exec $CONTAINER_ID sh -c "apt-get install -y -qq ./nri-introspector-java_0.1.0_SNAPSHOT-2_amd64.deb 2> /dev/null || true"
+                        else
+                          sudo docker exec $CONTAINER_ID sh -c "curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm"
+                          sudo docker exec $CONTAINER_ID sh -c "yum install -y -q nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm 2> /dev/null || true"
+                        fi
+                        echo -n "Attaching agent to Tomcat process in '$appName'..."
+                        sudo docker exec $CONTAINER_ID sh -c "nri-lsi-java -apm 1 -appName $appName -license $license -region $region > /dev/null || true"
+                        echo "complete!"
+                      else
+                        echo -e "Skipping instrumentation of process id $JAVA_PID: no OS Details for '$appName'"
+                      fi
+                    else
+                      echo -e "Skipping instrumentation of process id $JAVA_PID: could not determine owning container"
+                    fi
+                  fi
+                else
+                  echo -n "Attaching agent to Tomcat process with PID $JAVA_PID...:
+                  output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
+                  echo "complete!:
+                fi
+              fi
+            done
+          else
+            # otherwise remove our detecteds as they are the same state
+            sudo rm /etc/newrelic-java/.detected_pids
+          fi
+
+          # cleanup
+          if [ -f /etc/newrelic-java/.pids_in_docker ]; then
+            rm /etc/newrelic-java/.pids_in_docker
+          fi
+
+          (exit 0)
           EOT
-          sudo chmod 700 /etc/newrelic-java/dynamic-attach.sh
+          sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
 
     add-on-host-integration:
       cmds:
@@ -212,9 +262,11 @@ install:
           fi
           tee -a /etc/newrelic-infra/integrations.d/java-dynamic-attach-config.yml > /dev/null <<"EOT"
           integrations:
-            - name: java-dynamic-attach
-              exec: /etc/newrelic-java/dynamic-attach.sh
+            - name: dynamic-attach
+              exec: ./dynamic-attach.sh
+              working_dir: /etc/newrelic-java
               interval: 60s
+              integration_user: root
 
           EOT
-          sudo chmod 700 /etc/newrelic-infra/integrations.d/java-dynamic-attach-config.yml
+          sudo chmod 755 /etc/newrelic-infra/integrations.d/java-dynamic-attach-config.yml

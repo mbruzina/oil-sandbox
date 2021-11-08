@@ -1,0 +1,34 @@
+---
+
+- name: purge python-pip
+  shell: apt-get purge --auto-remove python-pip
+  become: yes
+
+- name: apt-get update
+  shell: apt-get update
+  become: yes
+  ignore_errors: true
+
+- name: install pip
+  shell: apt-get -y install python3-pip
+  become: yes
+
+- name: install docker-py
+  shell: pip install docker-py
+  become: yes
+
+- name: Upload war to host
+  synchronize: src=. dest=/tmp
+  become: yes
+
+- name: Build Tomcat Image
+  docker_image: >
+    name=tomcat
+    tag=hello-api
+    path=/tmp
+    state=present
+  become: yes
+
+- name: Run Tomcat Docker container
+  shell: "docker run -d -p {{ service_port }}:8080 --env TOMCAT_USERNAME=tomcat --env TOMCAT_PASSWORD=tomcat --name tomcat-hello-api tomcat:hello-api"
+  become: yes
