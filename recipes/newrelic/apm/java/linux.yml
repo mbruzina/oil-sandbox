@@ -176,7 +176,7 @@ install:
                ]
              }
            }
-           EOT
+          EOT
           }
 
 
