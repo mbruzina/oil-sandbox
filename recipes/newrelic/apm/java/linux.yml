@@ -210,7 +210,7 @@ install:
 
           # instrument new PIDs
           echo $(build_stdout_json "iterating over new_pids")
-          for JAVA_PID in $(cat .new_pids);
+          for JAVA_PID in $(sudo cat .new_pids);
           do
             INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
             isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
