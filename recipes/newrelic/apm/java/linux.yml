@@ -246,7 +246,6 @@ install:
             - name: java-dynamic-attach
               exec: /etc/newrelic-java/dynamic-attach.sh
               interval: 60s
-              integration_user: root
 
           EOT
           sudo chmod 700 /etc/newrelic-infra/integrations.d/java-dynamic-attach-config.yml
