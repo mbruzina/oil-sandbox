@@ -218,7 +218,7 @@ install:
               echo $(build_stdout_json "saving ${JAVA_PID}")
               echo $JAVA_PID >> .pids/saved_pids
             else
-              echo $(build_stdout_json "${JAVA_PID} did not match pattern ${pattern}"
+              echo $(build_stdout_json "${JAVA_PID} did not match pattern ${pattern}")
             fi
           done
 
