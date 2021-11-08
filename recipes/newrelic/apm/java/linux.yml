@@ -171,11 +171,10 @@ install:
                  {
                    "event_type": "JavaDynamicAttachSample",
                    "provider": "com.newrelic.virtuoso",
-                   "provider.executableName": "message"
+                   "provider.executableName": "$message"
                  }
                ]
-             }
-           }
+            }
           EOF
           }
 
