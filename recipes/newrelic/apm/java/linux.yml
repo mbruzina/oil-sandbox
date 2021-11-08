@@ -156,6 +156,7 @@ install:
           if [ -d /etc/newrelic-java/.pids ]; then
             rm -rf /etc/newrelic-java/.pids
             mkdir -p /etc/newrelic-java/.pids
+            touch /etc/newrelic-java/.pids/saved_pids
             chmod -R 700 /etc/newrelic-java/.pids
           fi
 
