@@ -217,8 +217,10 @@ install:
             if [ "$isMatchingPattern" -gt 0 ]; then
               echo $(build_stdout_json "attaching new process ${JAVA_PID}")
               output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
-              echo $(build_stdout_json "saving ${JAVA_PID}")
-              sudo echo $JAVA_PID >> .pids
+              if [ $(cat $output | grep 'The New Relic agent is already attached to this process' | grep -v grep | wc -l) -eq 0 ]
+                echo $(build_stdout_json "saving ${JAVA_PID}")
+                sudo echo $JAVA_PID >> .pids
+              fi
             else
               echo $(build_stdout_json "${JAVA_PID} did not match pattern ${pattern}")
             fi
@@ -228,7 +230,7 @@ install:
           echo $(build_stdout_json "removing dead_pids")
           for DEAD_PID in $(cat .dead_pids);
           do
-            sudo cat .pids| tr -d $DEAD_PID
+            sudo cat .pids | tr -d $DEAD_PID
           done
 
           # cleanup temp files, return empty json
