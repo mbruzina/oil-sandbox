@@ -217,7 +217,7 @@ install:
             if [ "$isMatchingPattern" -gt 0 ]; then
               echo $(build_stdout_json "attaching new process ${JAVA_PID}")
               output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
-              if [ $(cat $output | grep 'The New Relic agent is already attached to this process' | grep -v grep | wc -l) -eq 0 ]
+              if [[ $(cat $output | grep 'The New Relic agent is already attached to this process' | grep -v grep | wc -l) -eq 0 ]]; then
                 echo $(build_stdout_json "saving ${JAVA_PID}")
                 sudo echo $JAVA_PID >> .pids
               fi
