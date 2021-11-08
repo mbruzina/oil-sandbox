@@ -166,37 +166,49 @@ install:
           pattern='org.apache.catalina.startup.Bootstrap'
 
           # gives list of all PIDS
+          echo "touching detected_pids"
           touch .pids/detected_pids
+          echo "writing detected_pids"
           sudo nri-lsi-java -list | tr -d '[]' | xargs >> .pids/detected_pids
 
           # finds dead processes
+          echo "touching dead_pids"
           touch .pids/dead_pids
+          echo "findind dead_pids"
           comm -13 .pids/detected_pids .pids/saved_pids >> .pids/dead_pids
 
           # finds new processes
+          echo "touching new_pids"
           touch .pids/new_pids
+          echo "finding detected_pids"
           comm -23 .pids/detected_pids .pids/saved_pids >> .pids/new_pids
 
+          echo "removing detected_pids"
           rm .pids/detected_pids
 
           # instrument new PIDs
+          echo "iterating over .pids/new_pids"
           for JAVA_PID in $(cat .pids/new_pids);
           do
             INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
             isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
             if [ "$isMatchingPattern" -gt 0 ]; then
+              echo "attaching $JAVA_PID"
               output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
+              echo "saving $JAVA_PID"
               echo $JAVA_PID >> .pids/saved_pids
             fi
           done
 
           # remove dead PIDs
+          echo "removing dead pids from saved_pids"
           for DEAD_PID in $(cat .pids/dead_pids);
           do
             cat .pids/$saved_pids | tr -d $DEAD_PID
           done
 
           # cleanup temp files, return empty json
+          echo "temp file cleanup"
           rm .pids/dead_pids
           rm .pids/new_pids
           echo {}
