@@ -146,15 +146,62 @@ install:
             fi
           done
 
+
+    install-process-detection-script:
+      cmds:
+        - |
+          if [ -f /etc/newrelic-java/process-detection.sh ]; then
+            rm -f /etc/newrelic-java/process-detection.sh
+          fi
+
+          sudo touch /etc/newrelic-java/.pids
+          sudo chmod -R 755 /etc/newrelic-java/.pids
+
+          tee -a /etc/newrelic-java/process-detection.sh > /dev/null <<"EOT"
+          #!/bin/bash
+          build_stdout_json() {
+            message=$1
+            cat << EOF
+            {
+               "name": "java-process-detection",
+               "protocol_version": "3",
+               "integration_version": "1.0.0",
+               "metrics": [
+                 {
+                   "event_type": "JavaDynamicAttachSample",
+                   "provider": "com.newrelic.virtuoso",
+                   "provider.executableName": "$message"
+                 }
+               ]
+            }
+          EOF
+          }
+
+          echo $(build_stdout_json "touching detected_pids")
+          sudo touch .detected_pids
+          echo $(build_stdout_json "writing detected_pids")
+          sudo nri-lsi-java -list | tr -d '[]' | xargs >> .detected_pids
+
+          # if detected = existing, do nothing
+          # otherwise, replace existing with detected and flag
+          new_ids=$(sudo comm -3 .detected_pids .pids | wc -l)
+          if [[ $new_ids -gt 0 ]]; then
+            sudo rm .pids
+            sudo mv .detected_pids .pids
+            sudo touch /etc/newrelic-java/.attach
+            sudo chmod 755 /etc/newrelic-java/.attach
+          fi
+          echo {}
+          EOT
+          sudo chmod 755 /etc/newrelic-java/process-detection.sh
+
+
     install-instrument-script:
       cmds:
         - |
           if [ -f /etc/newrelic-java/dynamic-attach.sh ]; then
             rm -f /etc/newrelic-java/dynamic-attach.sh
           fi
-
-          sudo touch /etc/newrelic-java/.pids
-          sudo chmod -R 755 /etc/newrelic-java/.pids
 
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
           #!/bin/bash
@@ -176,7 +223,6 @@ install:
           EOF
           }
 
-          sudo rm -f /etc/newrelic-java/.available
           license={{.NEW_RELIC_LICENSE_KEY}}
           region={{.NEW_RELIC_REGION}}
           appName='{{.HOSTNAME}}-nr-app'
@@ -188,30 +234,9 @@ install:
             sudo chmod -R 755 /etc/newrelic-java/.pids
           fi
 
-          # gives list of all PIDS
-          echo $(build_stdout_json "touching detected_pids")
-          sudo touch .detected_pids
-          echo $(build_stdout_json "writing detected_pids")
-          sudo nri-lsi-java -list | tr -d '[]' | xargs >> .detected_pids
-
-          # finds dead processes
-          echo $(build_stdout_json "touching dead_pids")
-          sudo touch .dead_pids
-          echo $(build_stdout_json "finding dead_pids")
-          sudo comm -13 .detected_pids .pids >> .dead_pids
-
-          # finds new processes
-          echo $(build_stdout_json "touching new_pids")
-          sudo touch .new_pids
-          echo $(build_stdout_json "finding new_pids")
-          sudo comm -23 .detected_pids .pids >> .new_pids
-
-          echo $(build_stdout_json "removing detected_pids")
-          sudo rm .detected_pids
-
           # instrument new PIDs
           echo $(build_stdout_json "iterating over new_pids")
-          for JAVA_PID in $(sudo cat .new_pids);
+          for JAVA_PID in $(sudo cat .pids);
           do
             INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
             isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
@@ -226,19 +251,7 @@ install:
               echo $(build_stdout_json "${JAVA_PID} did not match pattern ${pattern}")
             fi
           done
-
-          # remove dead PIDs
-          echo $(build_stdout_json "removing dead_pids")
-          for DEAD_PID in $(cat .dead_pids);
-          do
-            sudo cat .pids | tr -d $DEAD_PID
-          done
-
-          # cleanup temp files, return empty json
-          echo $(build_stdout_json "removing temp_files")
-          sudo rm .dead_pids
-          sudo rm .new_pids
-          sudo touch /etc/newrelic-java/.available
+          sudo rm /etc/newrelic-java/.attach
           echo {}
           EOT
           sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
@@ -251,13 +264,17 @@ install:
           fi
           tee -a /etc/newrelic-infra/integrations.d/java-dynamic-attach-config.yml > /dev/null <<"EOT"
           integrations:
-            - name: java-dynamic-attach
+            - name: process-detection
+              exec: ./process-detection.sh
+              working_dir: /etc/newrelic-java
+              interval: 60s
+              integration_user: root
+            - name: dynamic-attach
               exec: ./dynamic-attach.sh
               working_dir: /etc/newrelic-java
-              interval: 300s
               integration_user: root
               when:
-                file_exists: /etc/newrelic-java/.available
+                file_exists: /etc/newrelic-java/.attach
 
           EOT
           sudo chmod 755 /etc/newrelic-infra/integrations.d/java-dynamic-attach-config.yml
