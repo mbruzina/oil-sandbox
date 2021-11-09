@@ -160,7 +160,6 @@ install:
           #!/bin/bash
           isJavaLsiRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
           if [ "$isJavaLsiRunning" -eq 0 ]; then
-            echo $(build_stdout_json "LSI is already running, skipping...")
             (exit 0)
           fi
 
@@ -195,7 +194,6 @@ install:
             # otherwise remove our detecteds as they are the same state
             sudo rm .detected_pids
           fi
-          echo {}
           (exit 0)
           EOT
           sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
