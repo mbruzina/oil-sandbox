@@ -75,6 +75,7 @@ install:
         - task: verify-continue
         - task: init
         - task: get-introspector
+        - task: install-process-detection-script
         - task: install-instrument-script
         - task: add-on-host-integration
 
