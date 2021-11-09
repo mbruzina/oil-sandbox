@@ -158,28 +158,10 @@ install:
 
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
           #!/bin/bash
-          build_stdout_json() {
-            message=$1
-            cat << EOF
-            {
-               "name": "java-dynamic-attach",
-               "protocol_version": "3",
-               "integration_version": "1.0.0",
-               "metrics": [
-                 {
-                   "event_type": "JavaDynamicAttachSample",
-                   "provider": "com.newrelic.virtuoso",
-                   "provider.executableName": "$message"
-                 }
-               ]
-            }
-          EOF
-          }
-
           isJavaLsiRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
           if [ "$isJavaLsiRunning" -eq 0 ]; then
             echo $(build_stdout_json "LSI is already running, skipping...")
-            exit 0
+            (exit 0)
           fi
 
           license={{.NEW_RELIC_LICENSE_KEY}}
@@ -193,33 +175,28 @@ install:
             sudo chmod -R 755 /etc/newrelic-java/.pids
           fi
 
-          echo $(build_stdout_json "touching detected_pids")
           sudo touch .detected_pids
-          echo $(build_stdout_json "writing detected_pids")
           sudo nri-lsi-java -list | tr -d '[]' | xargs >> .detected_pids
 
-          # if detected = existing, do nothing
-          # otherwise, replace existing with detected and flag
+          # if differences in state are detected, swap pid file with detected and attempt to attach
           new_ids=$(sudo comm -3 .detected_pids .pids | wc -l)
           if [[ $new_ids -gt 0 ]]; then
             sudo rm .pids
             sudo mv .detected_pids .pids
-            # instrument new PIDs
-            echo $(build_stdout_json "iterating over new_pids")
             for JAVA_PID in $(sudo cat .pids);
             do
               INTROSPECTION_DATA=$(sudo nri-lsi-java -introspect ${JAVA_PID})
               isMatchingPattern=$(echo $INTROSPECTION_DATA | grep $pattern | grep -v grep | wc -l)
               if [ "$isMatchingPattern" -gt 0 ]; then
-                echo $(build_stdout_json "attaching new process ${JAVA_PID}")
                 output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
               fi
             done
           else
+            # otherwise remove our detecteds as they are the same state
             sudo rm .detected_pids
           fi
           echo {}
-          exit 0
+          (exit 0)
           EOT
           sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
 
