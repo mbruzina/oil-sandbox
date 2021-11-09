@@ -277,7 +277,7 @@ install:
               working_dir: /etc/newrelic-java
               integration_user: root
               when:
-                file_exists: .attach
+                file_exists: /etc/newrelic-java/.attach
 
           EOT
           sudo chmod 755 /etc/newrelic-infra/integrations.d/java-dynamic-attach-config.yml
