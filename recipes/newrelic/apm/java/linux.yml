@@ -76,6 +76,7 @@ install:
         - task: init
         - task: get-introspector
         - task: install-process-detection-script
+        - task: execute-process-detection-script
         - task: install-instrument-script
         - task: add-on-host-integration
 
@@ -196,6 +197,10 @@ install:
           EOT
           sudo chmod 755 /etc/newrelic-java/process-detection.sh
 
+    execute-process-detection-script:
+      cmds:
+        - |
+          /etc/newrelic-java/process-detection.sh
 
     install-instrument-script:
       cmds:
