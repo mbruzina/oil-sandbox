@@ -235,6 +235,9 @@ install:
             sudo chmod -R 755 /etc/newrelic-java/.pids
           fi
 
+          # remove marker to prevent dupe runs
+          sudo rm /etc/newrelic-java/.attach
+
           # instrument new PIDs
           echo $(build_stdout_json "iterating over new_pids")
           for JAVA_PID in $(sudo cat .pids);
@@ -252,7 +255,6 @@ install:
               echo $(build_stdout_json "${JAVA_PID} did not match pattern ${pattern}")
             fi
           done
-          sudo rm /etc/newrelic-java/.attach
           echo {}
           EOT
           sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
