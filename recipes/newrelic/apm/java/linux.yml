@@ -175,6 +175,7 @@ install:
           fi
 
           sudo touch .detected_pids
+          sudo chmod 777 .detected_pids
           sudo nri-lsi-java -list | tr -d '[]' | xargs >> .detected_pids
 
           # if differences in state are detected, swap pid file with detected and attempt to attach
