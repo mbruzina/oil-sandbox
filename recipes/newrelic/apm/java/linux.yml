@@ -156,8 +156,6 @@ install:
           sudo touch /etc/newrelic-java/.pids
           sudo chmod -R 755 /etc/newrelic-java/.pids
 
-          echo "account id?: " {{.NEW_RELIC_ACCOUNT_ID}}
-
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
           #!/bin/bash
 
@@ -212,7 +210,7 @@ install:
                   if [[ "$JAVA_PID" == "$(cat /etc/newrelic-java/.pids_in_docker | grep $JAVA_PID | grep -v grep)" ]]; then
                     CONTAINER_ID=$(sudo docker ps -q | xargs sudo docker inspect --format '{{"{{"}}.State.Pid{{"}}"}}, {{"{{"}}.ID{{"}}"}}' | sed  -n -e "s|$JAVA_PID, ||p")
                     if [[ $CONTAINER_ID ]]; then
-                      appName={{.HOSTNAME}}:$(sudo docker inspect --format '{{"{{"}}.Name{{"}}"}}' $CONTAINER_ID | tr -d '/')
+                      appName=$(sudo docker inspect --format '{{"{{"}}.Name{{"}}"}}' $CONTAINER_ID | tr -d '/')
                       echo "Running Tomcat process detected in container '$appName' ($CONTAINER_ID)"
                       OS_DETAILS=$(sudo docker exec $CONTAINER_ID sh -c "uname -a")
                       if [[ $OS_DETAILS ]]; then
@@ -222,6 +220,13 @@ install:
                         else
                           sudo docker exec $CONTAINER_ID sh -c "curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm"
                           sudo docker exec $CONTAINER_ID sh -c "yum install -y -q nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm 2> /dev/null || true"
+                        fi
+                        if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
+                          echo -n "Enter an app name (default: $appName): "
+                          read -r answer
+                          if [[ -n $answer ]]; then
+                            appName=$answer
+                          fi
                         fi
                         echo -n "Attaching agent to Tomcat process in '$appName'..."
                         sudo docker exec $CONTAINER_ID sh -c "nri-lsi-java -apm 1 -appName $appName -license $license -region $region > /dev/null || true"
@@ -235,6 +240,7 @@ install:
                   fi
                 else
                   echo -n "Attaching agent to Tomcat process with PID $JAVA_PID...:
+
                   output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
                   echo "complete!:
                 fi
