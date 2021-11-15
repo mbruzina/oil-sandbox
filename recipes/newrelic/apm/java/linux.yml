@@ -240,8 +240,7 @@ install:
                     fi
                   fi
                 else
-                  echo -n "Attaching agent to Tomcat process with PID $JAVA_PID...:
-
+                  echo -n "Attaching agent to Tomcat process with PID $JAVA_PID..."
                   output=$(sudo nri-lsi-java -apm $JAVA_PID -appName $appName -license $license -region $region)
                   echo "complete!:
                 fi
