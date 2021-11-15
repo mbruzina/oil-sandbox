@@ -156,7 +156,7 @@ install:
           sudo touch /etc/newrelic-java/.pids
           sudo chmod -R 755 /etc/newrelic-java/.pids
 
-          defaultAppName='{{.HOSTNAME}}-nr-app'
+          defaultAppName='tomcat'
           if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
             echo -n "Enter an app name (default: $defaultAppName): "
             read -r answer
