@@ -158,7 +158,7 @@ install:
 
           defaultAppName='{{.HOSTNAME}}-nr-app'
           if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
-            echo -n "Enter an app name prefix (default: $defaultAppName): "
+            echo -n "Enter an app name (default: $defaultAppName): "
             read -r answer
             if [[ -n $answer ]]; then
               defaultAppName=$answer
