@@ -156,11 +156,20 @@ install:
           sudo touch /etc/newrelic-java/.pids
           sudo chmod -R 755 /etc/newrelic-java/.pids
 
+          appName='{{.HOSTNAME}}-nr-app'
+          if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
+            echo -n "Enter an app name prefix (default: $appName): "
+            read -r answer
+            if [[ -n $answer ]]; then
+              appName=$answer
+            fi
+          fi
+
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
           #!/bin/bash
           license={{.NEW_RELIC_LICENSE_KEY}}
           region={{.NEW_RELIC_REGION}}
-          appName='{{.HOSTNAME}}-nr-app'
+          appName=$appName
           pattern='org.apache.catalina.startup.Bootstrap'
 
           isJavaLsiRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
@@ -187,14 +196,6 @@ install:
               docker top $CONTAINER | awk '{print $2}' | sed '1d' >> /etc/newrelic-java/.pids_in_docker
             done
             sort -o /etc/newrelic-java/.pids_in_docker /etc/newrelic-java/.pids_in_docker
-          fi
-
-          if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
-            echo -n "Enter an app name prefix (default: {{.HOSTNAME}}-app): "
-            read -r answer
-            if [[ -n $answer ]]; then
-              appName=$answer
-            fi
           fi
 
           sudo touch /etc/newrelic-java/.detected_pids
