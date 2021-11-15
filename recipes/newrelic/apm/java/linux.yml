@@ -228,7 +228,7 @@ install:
                   if [[ "$JAVA_PID" == "$(cat /etc/newrelic-java/.pids_in_docker | grep $JAVA_PID | grep -v grep)" ]]; then
                     CONTAINER_ID=$(sudo docker ps -q | xargs sudo docker inspect --format '{{"{{"}}.State.Pid{{"}}"}}, {{"{{"}}.ID{{"}}"}}' | sed  -n -e "s|$JAVA_PID, ||p")
                     if [[ $CONTAINER_ID ]]; then
-                      if [[ $RENAME_DOCKER ]]; then
+                      if [[ $renameDocker ]]; then
                         appName=$(sudo docker inspect --format '{{"{{"}}.Name{{"}}"}}' $CONTAINER_ID | tr -d '/')
                       fi
                       echo "Running Tomcat process detected in container '$appName' ($CONTAINER_ID)"
