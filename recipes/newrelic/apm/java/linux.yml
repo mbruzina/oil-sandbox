@@ -169,7 +169,7 @@ install:
           #!/bin/bash
           license={{.NEW_RELIC_LICENSE_KEY}}
           region={{.NEW_RELIC_REGION}}
-          appName=$appName
+          appName="$appName"
           pattern='org.apache.catalina.startup.Bootstrap'
 
           isJavaLsiRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
