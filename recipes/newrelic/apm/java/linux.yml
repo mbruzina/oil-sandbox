@@ -169,7 +169,7 @@ install:
           #!/bin/bash
           license={{.NEW_RELIC_LICENSE_KEY}}
           region={{.NEW_RELIC_REGION}}
-          appName=${defaultAppName}
+          appName=DEFAULT_APP
           pattern='org.apache.catalina.startup.Bootstrap'
 
           isJavaLsiRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
@@ -258,6 +258,7 @@ install:
 
           (exit 0)
           EOT
+          sudo sed -i 's/DEFAULT_APP/\$defaultAppName/g'
           sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
 
     add-on-host-integration:
