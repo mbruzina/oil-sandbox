@@ -258,7 +258,7 @@ install:
 
           (exit 0)
           EOT
-          sudo sed -i 's/DEFAULT_APP/\$defaultAppName/g' /etc/newrelic-java/dynamic-attach.sh
+          sudo sed -i "s/DEFAULT_APP/$defaultAppName/g" /etc/newrelic-java/dynamic-attach.sh
           sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
 
     add-on-host-integration:
