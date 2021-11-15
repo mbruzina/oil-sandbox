@@ -158,10 +158,19 @@ install:
 
           defaultAppName='tomcat'
           if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
-            echo -n "Enter an app name (default: $defaultAppName): "
+            echo -n "Enter an app name (default: '$defaultAppName'): "
             read -r answer
             if [[ -n $answer ]]; then
               defaultAppName=$answer
+            fi
+          fi
+
+          renameDocker=''
+          if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
+            echo -n "Use $defaultAppName instead Docker container names? (default: 'N'): "
+            read -r answer
+            if [[ -n $answer ]]; then
+              renameDocker=$answer
             fi
           fi
 
@@ -170,6 +179,7 @@ install:
           license={{.NEW_RELIC_LICENSE_KEY}}
           region={{.NEW_RELIC_REGION}}
           appName=DEFAULT_APP
+          renameDocker=RENAME_DOCKER
           pattern='org.apache.catalina.startup.Bootstrap'
 
           isJavaLsiRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
@@ -218,7 +228,9 @@ install:
                   if [[ "$JAVA_PID" == "$(cat /etc/newrelic-java/.pids_in_docker | grep $JAVA_PID | grep -v grep)" ]]; then
                     CONTAINER_ID=$(sudo docker ps -q | xargs sudo docker inspect --format '{{"{{"}}.State.Pid{{"}}"}}, {{"{{"}}.ID{{"}}"}}' | sed  -n -e "s|$JAVA_PID, ||p")
                     if [[ $CONTAINER_ID ]]; then
-                      appName=$(sudo docker inspect --format '{{"{{"}}.Name{{"}}"}}' $CONTAINER_ID | tr -d '/')
+                      if [[ $RENAME_DOCKER ]]; then
+                        appName=$(sudo docker inspect --format '{{"{{"}}.Name{{"}}"}}' $CONTAINER_ID | tr -d '/')
+                      fi
                       echo "Running Tomcat process detected in container '$appName' ($CONTAINER_ID)"
                       OS_DETAILS=$(sudo docker exec $CONTAINER_ID sh -c "uname -a")
                       if [[ $OS_DETAILS ]]; then
@@ -259,6 +271,7 @@ install:
           (exit 0)
           EOT
           sudo sed -i "s/DEFAULT_APP/$defaultAppName/g" /etc/newrelic-java/dynamic-attach.sh
+          sudo sed -i "s/RENAME_DOCKER/$renameDocker/g" /etc/newrelic-java/dynamic-attach.sh
           sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
 
     add-on-host-integration:
