@@ -158,6 +158,10 @@ install:
 
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
           #!/bin/bash
+          license={{.NEW_RELIC_LICENSE_KEY}}
+          region={{.NEW_RELIC_REGION}}
+          appName='{{.HOSTNAME}}-nr-app'
+          pattern='org.apache.catalina.startup.Bootstrap'
 
           isJavaLsiRunning=$(sudo ps aux | grep nri-lsi-java | grep -v grep | wc -l)
           if [ "$isJavaLsiRunning" -eq 0 ]; then
@@ -185,6 +189,14 @@ install:
             sort -o /etc/newrelic-java/.pids_in_docker /etc/newrelic-java/.pids_in_docker
           fi
 
+          if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
+            echo -n "Enter an app name prefix (default: {{.HOSTNAME}}-app): "
+            read -r answer
+            if [[ -n $answer ]]; then
+              appName=$answer
+            fi
+          fi
+
           sudo touch /etc/newrelic-java/.detected_pids
           sudo chmod 755 /etc/newrelic-java/.detected_pids
           sudo nri-lsi-java -list | tr "," "\n" | tr -d "[ " | tr -d " ]" >> /etc/newrelic-java/.detected_pids
@@ -193,11 +205,6 @@ install:
           # if differences in state are detected, swap pid file with detected and attempt to attach
           new_ids=$(sudo comm -3 /etc/newrelic-java/.detected_pids /etc/newrelic-java/.pids | wc -l)
           if [[ $new_ids -gt 0 ]]; then
-            license={{.NEW_RELIC_LICENSE_KEY}}
-            region={{.NEW_RELIC_REGION}}
-            appName='{{.HOSTNAME}}-nr-app'
-            pattern='org.apache.catalina.startup.Bootstrap'
-
             sudo rm /etc/newrelic-java/.pids
             sudo mv /etc/newrelic-java/.detected_pids /etc/newrelic-java/.pids
             for JAVA_PID in $(sudo cat /etc/newrelic-java/.pids);
@@ -220,13 +227,6 @@ install:
                         else
                           sudo docker exec $CONTAINER_ID sh -c "curl -s -O https://download.newrelic.com/install/java/introspector/latest/nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm"
                           sudo docker exec $CONTAINER_ID sh -c "yum install -y -q nri-introspector-java-0.1.0_SNAPSHOT-2.x86_64.rpm 2> /dev/null || true"
-                        fi
-                        if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
-                          echo -n "Enter an app name (default: $appName): "
-                          read -r answer
-                          if [[ -n $answer ]]; then
-                            appName=$answer
-                          fi
                         fi
                         echo -n "Attaching agent to Tomcat process in '$appName'..."
                         sudo docker exec $CONTAINER_ID sh -c "nri-lsi-java -apm 1 -appName $appName -license $license -region $region > /dev/null || true"
