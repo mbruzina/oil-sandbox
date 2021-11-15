@@ -165,7 +165,6 @@ install:
             fi
           fi
 
-          renameDocker=''
           if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
             echo -n "Use $defaultAppName instead Docker container names? (default: 'N'): "
             read -r answer
