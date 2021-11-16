@@ -167,11 +167,21 @@ install:
           fi
 
           if [[ "{{.NEW_RELIC_ASSUME_YES}}" != "true" ]]; then
-            echo -n "Use $defaultAppName instead Docker container names? (default: 'N'): "
-            read -r answer
-            if [[ -n $answer ]]; then
-              renameDocker=$answer
-            fi
+            while :; do
+              echo -n "Use '$defaultAppName' instead Docker container names Y/N? (default: N)? "
+              read answer
+              echo ""
+              firstChar=$(echo "${answer^^}" | cut -c1-1)
+              if [[ "$firstChar" == "N" ]]; then
+                renameDocker=$firstChar
+                break;
+              fi
+              if [[ "$firstChar" == "Y" ]]; then
+                renameDocker=$firstChar
+                break;
+              fi
+              echo -e "Please type Y or N only."
+            done
           fi
 
           tee -a /etc/newrelic-java/dynamic-attach.sh > /dev/null <<"EOT"
@@ -228,7 +238,7 @@ install:
                   if [[ "$JAVA_PID" == "$(cat /etc/newrelic-java/.pids_in_docker | grep $JAVA_PID | grep -v grep)" ]]; then
                     CONTAINER_ID=$(sudo docker ps -q | xargs sudo docker inspect --format '{{"{{"}}.State.Pid{{"}}"}}, {{"{{"}}.ID{{"}}"}}' | sed  -n -e "s|$JAVA_PID, ||p")
                     if [[ $CONTAINER_ID ]]; then
-                      if [[ ! -z $renameDocker ]]; then
+                      if [[ "$renameDocker" == "N" ]]; then
                         appName=$(sudo docker inspect --format '{{"{{"}}.Name{{"}}"}}' $CONTAINER_ID | tr -d '/')
                       fi
                       echo "Running Tomcat process detected in container '$appName' ($CONTAINER_ID)"
