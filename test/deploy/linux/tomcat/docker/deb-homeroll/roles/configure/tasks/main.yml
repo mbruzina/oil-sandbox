@@ -17,15 +17,30 @@
   shell: pip install docker-py
   become: yes
 
+- name: install boto3
+  shell: pip install boto3
+  become: yes
+
+#- name: Download war from s3
+#  aws_s3:
+#    aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
+#    aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
+#    bucket: open-install-library-artifacts
+#    object: linux/java/spring-boot-rest.war
+#    s3_url: s3://open-install-library-artifacts/linux/java/
+#    dest: "files/ROOT.war"
+#    mode: get
+
+
 - name: Upload war to host
-  synchronize: src=. dest=/tmp
+  synchronize: src=. dest=/home/{{ ansible_user }}
   become: yes
 
 - name: Build Tomcat Image
   docker_image: >
-    name=tomcat
-    tag=hello-api
-    path=/tmp
+    name=spring-boot-rest
+    tag=1
+    path=/home/{{ ansible_user }}
     state=present
   become: yes
 

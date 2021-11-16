@@ -89,6 +89,7 @@ install:
           =                                           Warning                                           =
           =                                                                                             =
           =         This installation will periodically check for new Tomcat processes to monitor.      =
+          =    Any new Tomcat processes started after this installation will report data to New Relic.  =
           =                                                                                             =
           =                                                                                             =
           ===============================================================================================
@@ -227,7 +228,7 @@ install:
                   if [[ "$JAVA_PID" == "$(cat /etc/newrelic-java/.pids_in_docker | grep $JAVA_PID | grep -v grep)" ]]; then
                     CONTAINER_ID=$(sudo docker ps -q | xargs sudo docker inspect --format '{{"{{"}}.State.Pid{{"}}"}}, {{"{{"}}.ID{{"}}"}}' | sed  -n -e "s|$JAVA_PID, ||p")
                     if [[ $CONTAINER_ID ]]; then
-                      if [[ $renameDocker ]]; then
+                      if [[ ! -z $renameDocker ]]; then
                         appName=$(sudo docker inspect --format '{{"{{"}}.Name{{"}}"}}' $CONTAINER_ID | tr -d '/')
                       fi
                       echo "Running Tomcat process detected in container '$appName' ($CONTAINER_ID)"
@@ -271,7 +272,7 @@ install:
           EOT
           sudo sed -i "s/DEFAULT_APP/$defaultAppName/g" /etc/newrelic-java/dynamic-attach.sh
           sudo sed -i "s/RENAME_DOCKER/$renameDocker/g" /etc/newrelic-java/dynamic-attach.sh
-          sudo chmod 755 /etc/newrelic-java/dynamic-attach.sh
+          sudo chmod 700 /etc/newrelic-java/dynamic-attach.sh
 
     add-on-host-integration:
       cmds:
