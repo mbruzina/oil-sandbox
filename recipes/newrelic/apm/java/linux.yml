@@ -19,6 +19,10 @@ installTargets:
 dependencies:
   - infrastructure-agent-installer
 
+includes:
+  someOtherFile: ./includes/preInstall.yml
+  dir: ./includes
+
 keywords:
   - Apm
   - java
@@ -35,32 +39,7 @@ processMatch:
   - java.*org.apache.catalina.startup.Bootstrap
 
 preInstall:
-  requireAtDiscovery: |
-    user=$(whoami)
-    if [[ "$user" != "root" ]]; then
-      echo -e "This script must be run as root." >&2
-      exit 132
-    fi
-
-    cutInstalled=$(which cut 2> /dev/null)
-    if [[ -z "$cutInstalled" ]]; then
-      echo -e "This installation recipe for the New Relic Java Agent on Linux requires 'cut' to be installed." >&2
-      exit 132
-    fi
-
-    # Map of tool names to the associated error code
-    required_tools_and_error_codes="grep:132 cat:132 tee:132 date:132"
-    for tuple in $required_tools_and_error_codes; do
-      tool=$(echo ${tuple} |cut -d':' -f1)
-      code=$(echo ${tuple} |cut -d':' -f2)
-      toolInstalled=$(which ${tool} | wc -l)
-      if [[ "$toolInstalled" -eq 0 ]]; then
-        echo -e "This installation recipe for the New Relic Java Agent on Linux requires '${tool}' to be installed." >&2
-        exit ${code}
-      fi
-    done
-
-    exit 0
+  requireAtDiscovery: someOtherFile:cmd:doThangs
 
 validationNrql: "SELECT count(*) FROM NrIntegrationError WHERE purpose = 'New Relic CLI configuration validation' AND hostname like '{{.HOSTNAME}}%' since 10 minutes ago"
 
