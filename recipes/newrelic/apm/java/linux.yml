@@ -39,8 +39,10 @@ processMatch:
   - java.*org.apache.catalina.startup.Bootstrap
 
 preInstall:
-  requireAtDiscovery:
-    - task: someOtherFile:cmd:doThangs
+  tasks:
+    requireAtDiscovery:
+      cmds:
+        - task: someOtherFile:cmd:doThangs
 
 validationNrql: "SELECT count(*) FROM NrIntegrationError WHERE purpose = 'New Relic CLI configuration validation' AND hostname like '{{.HOSTNAME}}%' since 10 minutes ago"
 
