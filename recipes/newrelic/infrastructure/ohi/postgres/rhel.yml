@@ -116,6 +116,16 @@ install:
           # Check default connect
           CAN_CONNECT=$(curl $NR_CLI_DB_HOSTNAME:$NR_CLI_DB_PORT 2>&1 1>/dev/null -s -S | awk -F'[()]' '{print $2}')
           CAN_CONNECT=${CAN_CONNECT:-0}
+          
+          # Attempt grab port from running process
+          if [[ "$CAN_CONNECT" == "7" ]]; then
+            RUNNING_PORT=$(sudo netstat -plunt | grep postgres | cut -d ":" -f2 | cut -d " " -f1)
+            if [ -n $RUNNING_PORT ] && [ $RUNNING_PORT -gt 0 ] && [ $RUNNING_PORT -ne $NR_CLI_DB_HOSTNAME]; then 
+              NR_CLI_DB_PORT=$RUNNINT_PORT
+              CAN_CONNECT=$(curl $NR_CLI_DB_HOSTNAME:$NR_CLI_DB_PORT 2>&1 1>/dev/null -s -S | awk -F'[()]' '{print $2}')
+              CAN_CONNECT=${CAN_CONNECT:-0}
+            fi
+          fi
 
           if [[ "$NEW_RELIC_ASSUME_YES" != "true" ]]; then
             while [[ $TRIES -lt {{.MAX_RETRIES}} && "$CAN_CONNECT" == "7" ]]; do
