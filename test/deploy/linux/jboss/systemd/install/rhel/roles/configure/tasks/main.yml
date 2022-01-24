@@ -2,23 +2,12 @@
 - debug:
     msg: Install Systemd JBoss
 
-- block:
-  - name: yum install
-    package:
-      name: java
-      update_cache: yes
-      state: present
-    become: true
-  when: ansible_pkg_mgr == 'yum'
-
-- block:
-  - name: apt install
-    package:
-      name: default-jdk
-      update_cache: yes
-      state: present
-    become: true
-  when: ansible_pkg_mgr == 'apt'
+- name: Install Java
+  yum:
+    name: ["java"]
+    update_cache: yes
+    state: latest
+  become: true
 
 - name: Add wildfly group for Jboss
   shell: groupadd -r wildfly
