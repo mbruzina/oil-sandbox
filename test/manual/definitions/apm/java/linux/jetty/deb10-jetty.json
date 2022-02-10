@@ -8,7 +8,7 @@
   "resources": [
     {
       "id": "jettyhost",
-      "display_name": "AwsLinux2InfraJavaInstallHost",
+      "display_name": "Deb10JettyHost",
       "provider": "aws",
       "type": "ec2",
       "size": "t2.micro",

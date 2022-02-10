@@ -1,4 +1,8 @@
 ---
+- name: Upload nri-instrospector-java jar to host
+  synchronize: src=. dest=/home/{{ ansible_user }}
+  become: yes
+  when: ansible_pkg_mgr == 'yum'
 
 - name: Pull Jetty Docker image
   shell: "docker pull jetty"

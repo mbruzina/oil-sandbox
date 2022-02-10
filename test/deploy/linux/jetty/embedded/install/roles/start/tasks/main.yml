@@ -1,0 +1,5 @@
+---
+
+- name: Start embedded jetty application
+  shell: java -jar /home/{{ ansible_user }}/spring-boot-jetty-rest.jar
+  become: yes

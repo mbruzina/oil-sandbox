@@ -26,7 +26,7 @@
     },
     {
       "id": "jetty",
-      "source_repository": "https://github.com/newrelic/open-install-library.git",
+      "local_source_path": "/mnt/deployer/open-install-library",
       "deploy_script_path": "test/deploy/linux/jetty/docker/install/roles",
       "port": 9090,
       "destinations": [

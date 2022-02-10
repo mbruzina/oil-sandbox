@@ -1,0 +1,22 @@
+- name: Upload embedded jetty jar to host
+  synchronize: src=. dest=/home/{{ ansible_user }}
+  become: yes
+  when: ansible_pkg_mgr == 'yum'
+
+- block:
+  - name: Install java using yum
+    package:
+      name: java
+      update_cache: yes
+      state: present
+    become: true
+  when: ansible_pkg_mgr == 'yum'
+
+- block:
+  - name: Install java using apt
+    package:
+      name: default-jdk
+      update_cache: yes
+      state: present
+    become: true
+  when: ansible_pkg_mgr == 'apt'
