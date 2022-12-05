@@ -11,7 +11,7 @@
         "provider": "aws",
         "type": "ec2",
         "size": "t3.nano",
-        "ami_name": "ubuntu-minimal/images-testing/hvm-ssd/ubuntu-hirsute-daily-amd64-minimal-????????",
+        "ami_name": "ubuntu-minimal/images/hvm-ssd/ubuntu-hirsute-21.04-amd64-minimal-20220119",
         "user_name": "ubuntu"
     }],
 
