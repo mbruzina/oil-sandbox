@@ -80,8 +80,8 @@
       -L -H 'Content-Type: application/json' \
       -d @{{ playbook_dir }}/gql-query.json"
       register: output
-      retries: 25
-      delay: 30
+      retries: 20
+      delay: 10
       until: output is not failed and (output.stdout | from_json | json_query('data.actor.account.nrql.results[0].count') | int > 0)
   delegate_to: localhost
 

@@ -3,12 +3,10 @@
   ansible.builtin.apt:
     name:
       - xz-utils
-  become: yes
 
 - name: Add puppet-release package repository
   ansible.builtin.apt:
     deb: https://apt.puppet.com/puppet-release-focal.deb
-  become: yes
 
 - name: Update apt
   shell: apt update -y
@@ -20,21 +18,17 @@
       - net-tools
       - puppet-agent
     state: present
-  become: yes
 
 - name: Symlink puppet
   shell: ln -s /opt/puppetlabs/bin/puppet /usr/bin/puppet
   ignore_errors: true
-  become: yes
 
 - name: Add puppet-tools package repository (PDK)
   ansible.builtin.apt:
     deb: https://apt.puppet.com/puppet-tools-release-focal.deb
-  become: yes
 
 - name: Install pdk
   ansible.builtin.apt:
     name:
       - pdk
     state: present
-  become: yes
