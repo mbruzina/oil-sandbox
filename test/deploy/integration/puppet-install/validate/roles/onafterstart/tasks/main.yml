@@ -11,48 +11,42 @@
     msg: "A nrql_query is required. Create this entry in your deploy config file"
   when: nrql_query is not defined
 
-- set_fact:
-    containerized: false
-
 - name: Get Hostname
   set_fact:
     hostname_value: "{{ansible_hostname}}"
 
-- name: Set hostname if required
+- debug:
+    msg: Will query for hostname {{ hostname_value }}
+
+- name: Update query with hostname
   set_fact:
     nrql_query: "{{ nrql_query | replace('HOSTNAME', hostname_value) }}"
   when: '"HOSTNAME" in nrql_query'
 
-- name: Check NRQL for container ID clause
-  set_fact:
-    containerized: true
-  when: '"CONTAINERID" in nrql_query'
-
-- name: Lookup container name
-  when: containerized == true
-  shell: "docker ps -q | head -n 1"
-  become: yes
-  register: docker_output
-
-- name: Set containerid if required
-  when: containerized == true
-  set_fact:
-    nrql_query: "{{ nrql_query | replace('CONTAINERID', docker_output.stdout) }}"
-
-- name: Set default newrelic api url
+- name: Set default url
   set_fact:
     newrelic_api_url_to_use: "api.newrelic.com"
   when: newrelic_api_url is undefined
 
+- debug:
+    msg: newrelic_api_url_to_use - {{ newrelic_api_url_to_use }}
+
 - name: Override for non Staging and US regions
   set_fact:
     newrelic_api_url_to_use: "{{ newrelic_api_url_to_use | replace('api.newrelic', 'api.'+(newrelic_region|lower)+'.newrelic') }}"
-  when: newrelic_api_url_to_use is defined and newrelic_region is defined and (newrelic_region|upper) != "STAGING" and (newrelic_region|upper) != "US"
+  when: newrelic_api_url_to_use is defined and newrelic_region is defined and (newrelic_region|lower) == 'eu'
+
+- debug:
+    msg: newrelic_api_url_to_use - {{ newrelic_api_url_to_use }}
 
 - name: Use specified URL if exist
   set_fact:
     newrelic_api_url_to_use: "{{ newrelic_api_url }}"
   when: newrelic_api_url is defined
+
+- debug:
+    msg: newrelic_api_url_to_use - {{ newrelic_api_url_to_use }}
+
 
 - name: Ensure https api url
   set_fact:
@@ -61,6 +55,8 @@
 
 - debug:
     msg: "Using newrelic_api_url_to_use:{{ newrelic_api_url_to_use }}"
+
+
 
 - block:
     - name: Create payload
@@ -74,8 +70,14 @@
       template:
         src: gql-query.source.gpl
         dest: "{{ playbook_dir }}/gql-query.json"
+
+    - name: Dumping gql query json
+      shell: |
+        cat {{ playbook_dir }}/gql-query.json
+      become: true
+
     - name: Run NRQL via nerdgraph
-      shell: "curl -sX POST 'https://staging-api.newrelic.com/graphql' \
+      shell: "curl -sX POST '{{ newrelic_api_url_to_use }}/graphql' \
       -H 'API-Key: {{ newrelic_personal_api_key }}' \
       -L -H 'Content-Type: application/json' \
       -d @{{ playbook_dir }}/gql-query.json"
