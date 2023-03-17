@@ -1,15 +1,5 @@
 ---
-- name: Install git (RHEL >= 7)
-  ansible.builtin.dnf:
-    name:
-      - git
-    state: present
-  become: yes
-  when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2022') or
-         (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '8')"
-
-
-- name: Install git (RHEL < 7)
+- name: Install git (RHEL7)
   ansible.builtin.yum:
     name:
       - git
@@ -17,8 +7,14 @@
   become: yes
   when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2') or
          (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7')"
-
-
+- name: Install git (RHEL8)
+  ansible.builtin.dnf:
+    name:
+      - git
+    state: present
+  become: yes
+  when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2022') or
+         (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '8')"
 
 - name: Clone puppet-install repository
   ansible.builtin.git:
