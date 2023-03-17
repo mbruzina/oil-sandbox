@@ -2,10 +2,9 @@
 # Parameters:
 # nrql_query: A query to run against the NRQL database through the Graphql API to see if an entity is reporting
 # newrelic_api_url: (optional) the URL for the newrelic REST API, default to main us URL
-
-# Testing with EU
-# - set_fact:
-#     newrelic_api_url: "api.eu.newrelic.com"
+#   Testing with EU
+#     - set_fact:
+#         newrelic_api_url: "api.eu.newrelic.com"
 
 - fail:
     msg: "A nrql_query is required. Create this entry in your deploy config file"
@@ -15,38 +14,33 @@
   set_fact:
     hostname_value: "{{ansible_hostname}}"
 
-- debug:
-    msg: Will query for hostname {{ hostname_value }}
-
 - name: Update query with hostname
   set_fact:
     nrql_query: "{{ nrql_query | replace('HOSTNAME', hostname_value) }}"
   when: '"HOSTNAME" in nrql_query'
 
-- name: Set default url
+- name: Configure nerdgraph calls to use default url
   set_fact:
     newrelic_api_url_to_use: "api.newrelic.com"
   when: newrelic_api_url is undefined
 
-- debug:
-    msg: newrelic_api_url_to_use - {{ newrelic_api_url_to_use }}
-
-- name: Override for non Staging and US regions
+- name: Configure nerdgraph calls to use EU url
   set_fact:
-    newrelic_api_url_to_use: "{{ newrelic_api_url_to_use | replace('api.newrelic', 'api.'+(newrelic_region|lower)+'.newrelic') }}"
-  when: newrelic_api_url_to_use is defined and newrelic_region is defined and (newrelic_region|lower) == 'eu'
+    newrelic_api_url_to_use: "api.eu.newrelic.com"
+  when: newrelic_api_url is undefined and (newrelic_region|lower) == 'eu'
 
-- debug:
-    msg: newrelic_api_url_to_use - {{ newrelic_api_url_to_use }}
+- name: Configure nerdgraph calls to use Staging url
+  set_fact:
+    newrelic_api_url_to_use: "staging-api.newrelic.com"
+  when: newrelic_api_url is undefined and (newrelic_region|lower) == 'staging'
 
-- name: Use specified URL if exist
+- name: Configure nerdgraph calls to use newrelic_api_url parameter
   set_fact:
     newrelic_api_url_to_use: "{{ newrelic_api_url }}"
   when: newrelic_api_url is defined
 
 - debug:
     msg: newrelic_api_url_to_use - {{ newrelic_api_url_to_use }}
-
 
 - name: Ensure https api url
   set_fact:
@@ -55,8 +49,6 @@
 
 - debug:
     msg: "Using newrelic_api_url_to_use:{{ newrelic_api_url_to_use }}"
-
-
 
 - block:
     - name: Create payload

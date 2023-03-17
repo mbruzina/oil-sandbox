@@ -3,33 +3,83 @@
   shell: yum -y update
   become: yes
 
-- name: Download puppet platform
+# amzn2, centos7
+- name: Download puppet platform (RHEL < 7)
+  ansible.builtin.yum:
+    name: http://yum.puppetlabs.com/puppet-release-fedora-30.noarch.rpm
+    state: present
+  become: yes
+  when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2') or
+         (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7')"
+
+- name: Install puppet agent (RHEL < 7)
+  ansible.builtin.yum:
+    name:
+      - puppet
+    state: present
+  become: yes
+  when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2') or
+         (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7')"
+
+
+  # amzn2022, centos8
+- name: Download puppet platform (RHEL >= 7)
   ansible.builtin.dnf:
     name: http://yum.puppetlabs.com/puppet-release-fedora-32.noarch.rpm
     state: present
   become: yes
-
-- name: Install puppet agent
+  when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2022') or
+         (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '8')"
+- name: Install puppet agent (RHEL >= 7)
   ansible.builtin.dnf:
     name:
       - puppet
     state: present
   become: yes
+  when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2022') or
+         (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '8')"
 
 - name: Symlink puppet
   shell: ln -s /opt/puppetlabs/bin/puppet /usr/bin/puppet
   ignore_errors: true
   become: yes
 
-- name: Download puppet tools (pdk)
+- name: Download puppet tools (pdk) (RHEL < 7)
+  ansible.builtin.yum:
+    name: https://yum.puppet.com/puppet-tools-release-fedora-30.noarch.rpm
+    state: present
+  become: yes
+  when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2') or
+         (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7')"
+
+- name: Install pdk
+  ansible.builtin.yum:
+    name:
+      - pdk
+      - libxcrypt-compat
+    state: present
+  become: yes
+  when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2') or
+         (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7')"
+
+
+- name: Download puppet tools (pdk) (RHEL >= 7)
   ansible.builtin.dnf:
     name: https://yum.puppet.com/puppet-tools-release-fedora-32.noarch.rpm
     state: present
   become: yes
+  when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2022') or
+         (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '8')"
 
 - name: Install pdk
   ansible.builtin.dnf:
     name:
       - pdk
+      - libxcrypt-compat
     state: present
   become: yes
+  when: "(ansible_distribution == 'Amazon' and ansible_distribution_major_version == '2022') or
+         (ansible_distribution == 'CentOS' and ansible_distribution_major_version == '8')"
+
+
+
