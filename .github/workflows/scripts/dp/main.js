@@ -74,12 +74,12 @@ function sleep(ms) {
 
 async function main() {
     let messageId
-    let configJson = JSON.parse(process.env.MATRIX)
+    let configJson = JSON.parse(process.env.MATRIX).testDefinitionFile
     console.log(`Sending this json: ${configJson}`)
     try {
         const command = new SendMessageCommand({
             QueueUrl: SQS_URL,
-            MessageBody: configJson.taskDefinitionFile,
+            MessageBody: configJson,
         })
         data = await sqs.send(command);
         messageId = data.MessageId
