@@ -140,12 +140,12 @@ jobs:
             return testDefinitionFile;      
 
       - name: Install Test Dependencies
-        working-directory: .github/scripts/dp
+        working-directory: .github/workflows/scripts/dp
         run: npm install
 
       - name: Run Test
         id: runDeployerPlatformTest
-        working-directory: .github/scripts/dp
+        working-directory: .github/workflows/scripts/dp
         run: |
           echo "TEST_DEFINITION=$(echo $MATRIX | jq -c -r '.testDefinitionFile')" >> $GITHUB_ENV      
           node main.js
