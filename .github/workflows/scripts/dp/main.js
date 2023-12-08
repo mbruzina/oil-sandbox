@@ -79,7 +79,7 @@ async function main() {
             QueueUrl: SQS_URL,
             MessageBody: process.env.TEST_DEFINITION,
         })
-        data = await sqs.send(command)
+        data = await sqs.send(command);
         messageId = data.MessageId
         console.log(`Message sent: ${messageId}`)
     } catch (err) {
@@ -97,5 +97,7 @@ async function main() {
 }
 
 if (require.main === module) {
-    await main()
+    (async () => {
+        await main();
+    })();
 }
