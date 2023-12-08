@@ -94,7 +94,7 @@ async function main() {
     let RETRIES = 100, WAIT_SECONDS = 12
     const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
     if (!success) {
-        throw new Error(`Deployment failed for ${messageId} after ${RETRIES} retries}`);
+        throw new Error(`Deployment failed for ${messageId} after ${RETRIES} retries`);
     }
 
     console.log(`Successfully install New Relic for instanceId ${messageId}!`)

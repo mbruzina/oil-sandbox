@@ -143,49 +143,23 @@ jobs:
 
             return testDefinitionFile;
 
-      - name: Write AWS Certificate to File
+      - name: Install Test Dependencies
+        working-directory: .github/workflows/scripts/dp
+        run: npm install
+
+      - name: Run Test
+        id: runDeployerPlatformTest
+        working-directory: .github/workflows/scripts/dp
+        run: |
+          node main.js
         env:
-          AWS_PEM: ${{ secrets.GIT_DEPLOYER_CANADA_AWS_PEM }}
-        run: |
-          mkdir -p configs
-          rm -f configs/gitdeployerCanada.pem
-          echo "$AWS_PEM" > configs/gitdeployerCanada.pem
-          sudo chmod 400 configs/gitdeployerCanada.pem
-
-      - name: Write Test Definition File JSON to file
-        env:
-          USER_JSON: ${{ secrets.GIT_DEPLOYER_DOCKER_USER_CONFIG }}
-        run: |
-          echo "$USER_JSON" > configs/gitusdkr${{ github.run_id }}.json
-
-      - name: Pull Deployer image
-        run: |
-          docker pull newrelic/deployer:latest
-          docker images newrelic/deployer:latest
-
-      - name: Run deployer
-        id: deployerRun
-        run: |
-          set -e
-          testDefinitionFile=$(echo $MATRIX | jq -c -r '.testDefinitionFile')
-          echo $testDefinitionFile
-          docker run -i\
-            -v ${{ github.workspace }}/configs/:/mnt/deployer/configs/\
-            -v ${{ github.workspace }}/test/:/mnt/deployer/test/\
-            --entrypoint ruby newrelic/deployer:latest main.rb -c configs/gitusdkr${{ github.run_id }}.json -d $testDefinitionFile -l debug
-          echo ::set-output name=exit_status::$?
-      - name: Teardown any previous deployment
-        if: always()
-        id: cleanupResources
-        continue-on-error: true
-        run: |
-          testDefinitionFile=$(echo $MATRIX | jq -c -r '.testDefinitionFile')
-          echo $testDefinitionFile
-          docker run \
-            -v ${{ github.workspace }}/configs/:/mnt/deployer/configs/\
-            -v ${{ github.workspace }}/test/:/mnt/deployer/test/\
-            --entrypoint ruby newrelic/deployer:latest main.rb -c configs/gitusdkr${{ github.run_id }}.json -d $testDefinitionFile -t
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SQS_URL: ${{ secrets.SQS_URL }}
+          DYNAMO_TABLE: ${{ secrets.DYNAMO_TABLE }}
 
       - name: Report any error
-        if: steps.deployerRun.outputs.exit_status != 0
+        if: steps.runDeployerPlatformTest.outputs.exit_status != 0
         run: exit 1
+
