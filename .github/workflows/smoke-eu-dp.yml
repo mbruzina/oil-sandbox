@@ -146,12 +146,10 @@ jobs:
       - name: Run Test
         id: runDeployerPlatformTest
         working-directory: .github/workflows/scripts/dp
-        run: |
-          testDefinitionFile=$(echo $MATRIX | jq -c -r '.testDefinitionFile')
-          echo $testDefinitionFile
-          echo "TEST_DEFINITION=$(echo $testDefinitionFile)" >> $GITHUB_ENV
+        run: |        
           node main.js
         env:
+          TEST_DEFINITION: ${{ steps.get-test-definition-files.outputs.testDefinitionFile }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}

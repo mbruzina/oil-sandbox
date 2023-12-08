@@ -74,6 +74,8 @@ function sleep(ms) {
 
 async function main() {
     let messageId
+    let configJson = process.env.TEST_DEFINITION
+    console.log(`Sending this json: ${configJson}`)
     try {
         const command = new SendMessageCommand({
             QueueUrl: SQS_URL,
