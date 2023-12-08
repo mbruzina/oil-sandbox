@@ -1,4 +1,4 @@
-const https = require('https')
+const fs = require('fs')
 const {SQSClient, SendMessageCommand} = require('@aws-sdk/client-sqs')
 const {DynamoDBClient, QueryCommand} = require('@aws-sdk/client-dynamodb')
 const {unmarshall} = require('@aws-sdk/util-dynamodb')
@@ -74,7 +74,7 @@ function sleep(ms) {
 
 async function main() {
     let messageId
-    let configJson = JSON.parse(process.env.MATRIX).testDefinitionFile
+    let configJson = fs.readFileSync(JSON.parse(process.env.MATRIX).testDefinitionFile)
     console.log(`Sending this json: ${configJson}`)
     try {
         const command = new SendMessageCommand({
