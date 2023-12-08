@@ -83,6 +83,7 @@ async function main() {
         messageId = data.MessageId
         console.log(`Message sent: ${messageId}`)
     } catch (err) {
+        console.log(err.message)
         throw new Error('Failed sending message to SQS queue');
     }
 
