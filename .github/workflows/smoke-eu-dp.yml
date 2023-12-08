@@ -148,7 +148,7 @@ jobs:
         working-directory: .github/workflows/scripts/dp
         run: |
           echo "TEST_DEFINITION=$(echo $MATRIX | jq -c -r '.testDefinitionFile')" >> $GITHUB_ENV && 
-          echo $GITHUB_ENV && 
+          echo $TEST_DEFINITION && 
           node main.js
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
