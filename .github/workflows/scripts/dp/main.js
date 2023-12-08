@@ -75,7 +75,6 @@ function sleep(ms) {
 async function main() {
     let messageId
     let configJson = fs.readFileSync(`${process.env.GITHUB_WORKSPACE}/${JSON.parse(process.env.MATRIX).testDefinitionFile}`)
-    console.log(`Sending this json: ${configJson}`)
     try {
         const command = new SendMessageCommand({
             QueueUrl: SQS_URL,
@@ -89,8 +88,11 @@ async function main() {
         throw new Error('Failed sending message to SQS queue');
     }
 
+    // Initial sleep since fargate takes time to spin up deployer
+    await sleep(120 * 1000)
+
     // Execute the query with retries/sleeps
-    let RETRIES = 100, WAIT_SECONDS = 30
+    let RETRIES = 100, WAIT_SECONDS = 12
     const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
     if (!success) {
         throw new Error(`Deployment failed for ${messageId} after ${RETRIES} retries}`);
