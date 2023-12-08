@@ -97,37 +97,7 @@ async function main() {
         throw new Error(`Deployment failed for ${messageId} after ${RETRIES} retries}`);
     }
 
-    console.log(`%c
-           .                .                   
-            :"-.          .-";                   
-            |:\`.\`.__..__.'.';|                   
-            || :-"      "-; ||                   
-            :;              :;                   
-            /  .==.    .==.  \\                   
-           :      _.--._      ;                  
-           ; .--.' \`--' \`.--. :                  
-          :   __;\`      ':__   ;                 
-          ;  '  '-._:;_.-'  '  :                 
-          '.       \`--'       .'                 
-           ."-._          _.-".                  
-         .'     ""------""     \`.                
-        /\`-                    -'\\               
-       /\`-                      -'\\              
-      :\`-   .'              \`.   -';             
-      ;    /                  \\    :             
-     :    :                    ;    ;            
-     ;    ;                    :    :            
-     ':_:.'                    '.;_;'            
-        :_                      _;               
-        ; "-._                -" :\`-.     _.._   
-        :_          ()          _;   "--::__. \`. 
-         \\"-                  -"/\`._           : 
-        .-"-.                 -"-.  ""--..____.' 
-       /         .__  __.         \\              
-      : / ,       / "" \\       . \\ ; *purrrrrr* - success kitty         
-       "-:___..--"      "--..___;-"    
-`, `font-family: monospace`);
-
+    console.log(`Successfully install New Relic for instanceId ${messageId}!`)
 }
 
 if (require.main === module) {
