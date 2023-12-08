@@ -139,12 +139,6 @@ jobs:
 
             return testDefinitionFile;      
 
-      - name: Write Test Definition File JSON to file
-        env:
-          USER_JSON: ${{ secrets.GIT_DEPLOYER_DOCKER_USER_CONFIG_EU }}
-        run: |
-          echo "$USER_JSON" > configs/gitusdkreu${{ github.run_id }}.json
-
       - name: Install Test Dependencies
         working-directory: ${{ github.workspace }}/.github/scripts/dp
         run: npm install
