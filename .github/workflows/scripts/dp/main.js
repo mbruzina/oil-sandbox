@@ -83,19 +83,21 @@ async function main() {
         messageId = data.MessageId
         console.log(`Message sent: ${messageId}`)
     } catch (err) {
-        console.error('::set-output name=exit_status::0')
+        throw new Error('Failed sending message to SQS queue');
     }
 
     // Execute the query with retries/sleeps
     let RETRIES = 100, WAIT_SECONDS = 30
     const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
     if (!success) {
-        console.log('::set-output name=exit_status::1')
+        throw new Error(`Deployment failed for ${messageId} after ${RETRIES} retries}`);
     }
-
-    console.log('::set-output name=exit_status::0')
 }
 
 if (require.main === module) {
-    await main()
+    main().then(() => {
+        console.log('::set-output name=exit_status::0')
+    }).catch((err) => {
+        console.error('::set-output name=exit_status::1')
+    })
 }
