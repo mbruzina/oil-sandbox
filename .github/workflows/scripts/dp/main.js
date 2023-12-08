@@ -72,47 +72,30 @@ function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function main() {
-    const url = process.env.TEST_DEFINITION_URL
-
-    https.get(url, (res) => {
-        let body = ''
-
-        res.on('data', (chunk) => {
-            body += chunk
+async function main() {
+    let messageId
+    try {
+        const command = new SendMessageCommand({
+            QueueUrl: SQS_URL,
+            MessageBody: process.env.TEST_DEFINITION,
         })
+        data = await sqs.send(command)
+        messageId = data.MessageId
+        console.log(`Message sent: ${messageId}`)
+    } catch (err) {
+        console.error('::set-output name=exit_status::0')
+    }
 
-        res.on('end', async () => {
-            let messageId
-            try {
-                const command = new SendMessageCommand({
-                    QueueUrl: SQS_URL,
-                    MessageBody: body,
-                })
-                data = await sqs.send(command)
-                messageId = data.MessageId
-                console.log(`Message sent: ${messageId}`)
-            } catch (err) {
-                console.error(`Error sending message: ${err}`)
-            }
+    // Execute the query with retries/sleeps
+    let RETRIES = 100, WAIT_SECONDS = 30
+    const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
+    if (!success) {
+        console.log('::set-output name=exit_status::1')
+    }
 
-            // Execute the query with retries/sleeps
-            let RETRIES = 100, WAIT_SECONDS = 30
-            const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
-            if (!success) {
-                console.log('::set-output name=exit_status::1')
-            }
-        })
-
-        res.on('error', (err) => {
-            console.error(`Error calling URL: ${err}`)
-            console.log('::set-output name=exit_status::1')
-        })
-
-        console.log('::set-output name=exit_status::0')
-    })
+    console.log('::set-output name=exit_status::0')
 }
 
 if (require.main === module) {
-    main()
+    await main()
 }
