@@ -98,6 +98,7 @@ if (require.main === module) {
     main().then(() => {
         console.log('::set-output name=exit_status::0')
     }).catch((err) => {
+        console.error(`::error::${err}`)
         console.error('::set-output name=exit_status::1')
     })
 }
