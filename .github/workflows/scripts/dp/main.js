@@ -42,17 +42,12 @@ function queryForDeploymentStatus(messageId) {
 
 async function isDeploymentSuccessful(deploymentId, retries, waitSeconds) {
     for (let i = 0; i < retries; i++) {
-        console.log(`Deployment pending, sleeping ${waitSeconds} seconds...`)
-        await sleep(waitSeconds * 1000)
 
         try {
             const response = await dynamodb.send(queryForDeploymentStatus(deploymentId))
-            console.log(`Query succeeded. Items found: ${response.Items.length}`)
-
             for (let i = 0; i < response.Items.length; i++) {
                 const item = unmarshall(response.Items[i])
                 if (item.completed) {
-                    console.log(`Completed: ${item.id} - ${item.message} - ${item.completed} - ${item.status}`)
                     if (item.status === 'FAILED') {
                         console.error(`::error:: Deployment failed: ${item.message}`)
                         return false
@@ -61,6 +56,10 @@ async function isDeploymentSuccessful(deploymentId, retries, waitSeconds) {
                     return true
                 }
             }
+
+            console.log(`Deployment pending, sleeping ${waitSeconds} seconds...`)
+            await sleep(waitSeconds * 1000)
+
         } catch (err) {
             console.log(`Error querying table: ${err}`)
         }
@@ -97,6 +96,38 @@ async function main() {
     if (!success) {
         throw new Error(`Deployment failed for ${messageId} after ${RETRIES} retries}`);
     }
+
+    console.log(`%c
+           .                .                   
+            :"-.          .-";                   
+            |:\`.\`.__..__.'.';|                   
+            || :-"      "-; ||                   
+            :;              :;                   
+            /  .==.    .==.  \\                   
+           :      _.--._      ;                  
+           ; .--.' \`--' \`.--. :                  
+          :   __;\`      ':__   ;                 
+          ;  '  '-._:;_.-'  '  :                 
+          '.       \`--'       .'                 
+           ."-._          _.-".                  
+         .'     ""------""     \`.                
+        /\`-                    -'\\               
+       /\`-                      -'\\              
+      :\`-   .'              \`.   -';             
+      ;    /                  \\    :             
+     :    :                    ;    ;            
+     ;    ;                    :    :            
+     ':_:.'                    '.;_;'            
+        :_                      _;               
+        ; "-._                -" :\`-.     _.._   
+        :_          ()          _;   "--::__. \`. 
+         \\"-                  -"/\`._           : 
+        .-"-.                 -"-.  ""--..____.' 
+       /         .__  __.         \\              
+      : / ,       / "" \\       . \\ ; *purrrrrr* - success kitty         
+       "-:___..--"      "--..___;-"    
+`, `font-family: monospace`);
+
 }
 
 if (require.main === module) {
