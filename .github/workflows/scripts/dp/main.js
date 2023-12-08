@@ -74,7 +74,8 @@ function sleep(ms) {
 
 async function main() {
     let messageId
-    let configJson = fs.readFileSync(JSON.parse(process.env.MATRIX).testDefinitionFile)
+    let rootDir = process.env.GITHUB_WORKSPACE
+    let configJson = fs.readFileSync(`${rootDir}/${JSON.parse(process.env.MATRIX).testDefinitionFile}`)
     console.log(`Sending this json: ${configJson}`)
     try {
         const command = new SendMessageCommand({
