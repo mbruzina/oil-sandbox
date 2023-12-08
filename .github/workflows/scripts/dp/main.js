@@ -97,7 +97,5 @@ async function main() {
 }
 
 if (require.main === module) {
-    (async () => {
-        await main();
-    })();
+    await main()
 }
