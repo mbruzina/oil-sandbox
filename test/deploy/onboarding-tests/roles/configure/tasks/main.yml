@@ -15,7 +15,7 @@
 
 - name: Install Git on Linux
   become: yes
-  apt:
+  yum:
     name: git
     state: present
 
