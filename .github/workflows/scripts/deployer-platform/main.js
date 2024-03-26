@@ -1,4 +1,4 @@
-const https = require('https')
+const deployConfig = require(`./${process.env.TEST_DEFINITION_FILE}`)
 const {SQSClient, SendMessageCommand} = require('@aws-sdk/client-sqs')
 const {DynamoDBClient, QueryCommand} = require('@aws-sdk/client-dynamodb')
 const {unmarshall} = require('@aws-sdk/util-dynamodb')
@@ -73,7 +73,7 @@ function sleep(ms) {
 }
 
 function main() {
-    fetch(`./${process.env.TEST_DEFINITION_FILE}`).then(async (json) => {
+    const executeTest = async (json) => {
         let messageId
         try {
             const command = new SendMessageCommand({
@@ -93,9 +93,13 @@ function main() {
         if (!success) {
             process.exit(1)
         }
-    }).catch((error) =>
-        console.log(`Test execution failed for ${process.env.TEST_DEFINITION_FILE}: ${error}`)
-    )
+    }
+
+    executeTest().then((data) => {
+        console.log(`Test completed!: ${data}`)
+    }, (error) => {
+        console.log(`Error :${error}`)
+    })
 }
 
 if (require.main === module) {
