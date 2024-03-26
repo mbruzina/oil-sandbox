@@ -1,3 +1,4 @@
+const https = require('https')
 const {SQSClient, SendMessageCommand} = require('@aws-sdk/client-sqs')
 const {DynamoDBClient, QueryCommand} = require('@aws-sdk/client-dynamodb')
 const {unmarshall} = require('@aws-sdk/util-dynamodb')
@@ -72,7 +73,7 @@ function sleep(ms) {
 }
 
 function main() {
-    import(`/home/runner/work/oil-sandbox/oil-sandbox/.github/workflows/${process.env.TEST_DEFINITION_FILE}`)
+    fetch(`./home/runner/work/oil-sandbox/oil-sandbox/.github/workflows/${process.env.TEST_DEFINITION_FILE}`)
         .then(async (json) => {
             let messageId
             try {
@@ -94,10 +95,8 @@ function main() {
                 process.exit(1)
             }
         }).catch((error) =>
-        console.log("err")
+        console.log(`Kaboom: ${error}`)
     )
-
-
 }
 
 if (require.main === module) {
