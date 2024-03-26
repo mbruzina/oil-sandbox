@@ -73,7 +73,7 @@ function sleep(ms) {
 }
 
 function main() {
-    fetch(`./home/runner/work/oil-sandbox/oil-sandbox/.github/workflows/${process.env.TEST_DEFINITION_FILE}`)
+    fetch(`./home/runner/work/oil-sandbox/oil-sandbox/${process.env.TEST_DEFINITION_FILE}`)
         .then(async (json) => {
             let messageId
             try {
