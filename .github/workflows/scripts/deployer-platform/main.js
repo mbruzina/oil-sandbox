@@ -72,29 +72,32 @@ function sleep(ms) {
 }
 
 function main() {
-    fetch(`/home/runner/work/oil-sandbox/oil-sandbox/.github/workflows/${process.env.TEST_DEFINITION_FILE}`).then(async (json) => {
-        let messageId
-        try {
-            const command = new SendMessageCommand({
-                QueueUrl: SQS_URL,
-                MessageBody: json,
-            })
-            data = await sqs.send(command)
-            messageId = data.MessageId
-            console.log(`Message sent: ${messageId}`)
-        } catch (err) {
-            console.error(`Error sending message: ${err}`)
-        }
+    import(`/home/runner/work/oil-sandbox/oil-sandbox/.github/workflows/${process.env.TEST_DEFINITION_FILE}`)
+        .then(async (json) => {
+            let messageId
+            try {
+                const command = new SendMessageCommand({
+                    QueueUrl: SQS_URL,
+                    MessageBody: json,
+                })
+                data = await sqs.send(command)
+                messageId = data.MessageId
+                console.log(`Message sent: ${messageId}`)
+            } catch (err) {
+                console.error(`Error sending message: ${err}`)
+            }
 
-        // Execute the query with retries/sleeps
-        let RETRIES = 200, WAIT_SECONDS = 15
-        const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
-        if (!success) {
-            process.exit(1)
-        }
-    }).catch((error) =>
-        console.log(`Test execution failed for ${process.env.TEST_DEFINITION_FILE}: ${error}`)
+            // Execute the query with retries/sleeps
+            let RETRIES = 200, WAIT_SECONDS = 15
+            const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
+            if (!success) {
+                process.exit(1)
+            }
+        }).catch((error) =>
+        console.log("err")
     )
+
+
 }
 
 if (require.main === module) {
