@@ -84,7 +84,7 @@ jobs:
 
   test-deploy-recipe:
     name: ${{ matrix.testDisplayName }}
-    needs: [get-files]
+    needs: [get-test-definition-files]
     if: ${{ fromJSON(needs.get-test-definition-files.outputs.matrix).include[0] }} # Avoids empty matrix validation error
     runs-on: ubuntu-latest
     strategy:
