@@ -1,4 +1,4 @@
-name: 'Non Regression Testing (dp)(EU) - APMs'
+name: 'Non Regression Testing (US) - Otel'
 
 on:
   workflow_dispatch:
