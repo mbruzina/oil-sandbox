@@ -75,7 +75,7 @@ function sleep(ms) {
 
 async function getDeployConfigFile(file) {
     const data = await fsp.readFile(file);
-    return JSON.stringify(data);
+    return JSON.parse(data);
 }
 
 function main() {
