@@ -73,7 +73,8 @@ function sleep(ms) {
 }
 
 function main() {
-    fetch(process.env.TEST_DEFINITION_FILE).then(async (json) => {
+    const deployConfig = require(`./${process.env.TEST_DEFINITION_FILE}`)
+    fetch(deployConfig).then(async (json) => {
         let messageId
         try {
             const command = new SendMessageCommand({
