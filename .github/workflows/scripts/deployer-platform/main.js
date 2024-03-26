@@ -73,41 +73,36 @@ function sleep(ms) {
 }
 
 function main() {
-    const url = process.env.TEST_DEFINITION_URL
+    const execTest = async () => {
+        let messageId
+        try {
+            const command = new SendMessageCommand({
+                QueueUrl: SQS_URL,
+                MessageBody: process.env.TEST_DEFINITION_FILE,
+            })
+            data = await sqs.send(command)
+            messageId = data.MessageId
+            console.log(`Message sent: ${messageId}`)
+        } catch (err) {
+            console.error(`Error sending message: ${err}`)
+        }
 
-    https.get(url, (res) => {
-        let body = ''
+        // Execute the query with retries/sleeps
+        let RETRIES = 200, WAIT_SECONDS = 15
+        const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
+        if (!success) {
+            process.exit(1)
+        }
+    }
 
-        res.on('data', (chunk) => {
-            body += chunk
-        })
-
-        res.on('end', async () => {
-            let messageId
-            try {
-                const command = new SendMessageCommand({
-                    QueueUrl: SQS_URL,
-                    MessageBody: body,
-                })
-                data = await sqs.send(command)
-                messageId = data.MessageId
-                console.log(`Message sent: ${messageId}`)
-            } catch (err) {
-                console.error(`Error sending message: ${err}`)
-            }
-
-            // Execute the query with retries/sleeps
-            let RETRIES = 200, WAIT_SECONDS = 15
-            const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
-            if (!success) {
-                process.exit(1)
-            }
-        })
-
-        res.on('error', (err) => {
-            console.error(`Error calling URL: ${err}`)
-        })
-    })
+    execTest().then(
+        () => {
+            console.log(`Test completed for ${process.env.TEST_DEFINITION_FILE}`)
+        },
+        (error) => {
+            console.error(`Test errored for ${process.env.TEST_DEFINITION_FILE}: ${error}`)
+        }
+    )
 }
 
 if (require.main === module) {
