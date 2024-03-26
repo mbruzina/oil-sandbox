@@ -1,4 +1,3 @@
-const deployConfig = require(`./${process.env.TEST_DEFINITION_FILE}`)
 const {SQSClient, SendMessageCommand} = require('@aws-sdk/client-sqs')
 const {DynamoDBClient, QueryCommand} = require('@aws-sdk/client-dynamodb')
 const {unmarshall} = require('@aws-sdk/util-dynamodb')
