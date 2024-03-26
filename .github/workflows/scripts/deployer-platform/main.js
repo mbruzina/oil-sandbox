@@ -1,4 +1,5 @@
-const https = require('https')
+const fs = require('fs');
+const fsp = fs.promises;
 const {SQSClient, SendMessageCommand} = require('@aws-sdk/client-sqs')
 const {DynamoDBClient, QueryCommand} = require('@aws-sdk/client-dynamodb')
 const {unmarshall} = require('@aws-sdk/util-dynamodb')
@@ -72,8 +73,13 @@ function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+async function getDeployConfigFile(file) {
+    const data = await fsp.readFile(file);
+    return JSON.stringify(data);
+}
+
 function main() {
-    fetch(`./home/runner/work/oil-sandbox/oil-sandbox/${process.env.TEST_DEFINITION_FILE}`)
+    getDeployConfigFile(`${process.env.GITHUB_WORKSPACE}${process.env.TEST_DEFINITION_FILE}`)
         .then(async (json) => {
             let messageId
             try {
