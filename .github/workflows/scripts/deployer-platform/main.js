@@ -1,4 +1,4 @@
-const fs = require('fs')
+const https = require('https')
 const {SQSClient, SendMessageCommand} = require('@aws-sdk/client-sqs')
 const {DynamoDBClient, QueryCommand} = require('@aws-sdk/client-dynamodb')
 const {unmarshall} = require('@aws-sdk/util-dynamodb')
@@ -42,12 +42,17 @@ function queryForDeploymentStatus(messageId) {
 
 async function isDeploymentSuccessful(deploymentId, retries, waitSeconds) {
     for (let i = 0; i < retries; i++) {
+        console.log(`Deployment pending, sleeping ${waitSeconds} seconds...`)
+        await sleep(waitSeconds * 1000)
 
         try {
             const response = await dynamodb.send(queryForDeploymentStatus(deploymentId))
+            console.log(`Query succeeded. Items found: ${response.Items.length}`)
+
             for (let i = 0; i < response.Items.length; i++) {
                 const item = unmarshall(response.Items[i])
                 if (item.completed) {
+                    console.log(`Completed: ${item.id} - ${item.message} - ${item.completed} - ${item.status}`)
                     if (item.status === 'FAILED') {
                         console.error(`::error:: Deployment failed: ${item.message}`)
                         return false
@@ -56,10 +61,6 @@ async function isDeploymentSuccessful(deploymentId, retries, waitSeconds) {
                     return true
                 }
             }
-
-            console.log(`Deployment pending, sleeping ${waitSeconds} seconds...`)
-            await sleep(waitSeconds * 1000)
-
         } catch (err) {
             console.log(`Error querying table: ${err}`)
         }
@@ -71,40 +72,44 @@ function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function main() {
-    let messageId
-    let configJson = fs.readFileSync(`${process.env.GITHUB_WORKSPACE}/${JSON.parse(process.env.MATRIX).testDefinitionFile}`)
-    try {
-        const command = new SendMessageCommand({
-            QueueUrl: SQS_URL,
-            MessageBody: configJson,
+function main() {
+    const url = process.env.TEST_DEFINITION_URL
+
+    https.get(url, (res) => {
+        let body = ''
+
+        res.on('data', (chunk) => {
+            body += chunk
         })
-        data = await sqs.send(command);
-        messageId = data.MessageId
-        console.log(`Message sent: ${messageId}`)
-    } catch (err) {
-        console.log(err.message)
-        throw new Error('Failed sending message to SQS queue');
-    }
 
-    // Initial sleep since fargate takes time to spin up deployer
-    await sleep(120 * 1000)
+        res.on('end', async () => {
+            let messageId
+            try {
+                const command = new SendMessageCommand({
+                    QueueUrl: SQS_URL,
+                    MessageBody: body,
+                })
+                data = await sqs.send(command)
+                messageId = data.MessageId
+                console.log(`Message sent: ${messageId}`)
+            } catch (err) {
+                console.error(`Error sending message: ${err}`)
+            }
 
-    // Execute the query with retries/sleeps
-    let RETRIES = 100, WAIT_SECONDS = 12
-    const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
-    if (!success) {
-        throw new Error(`Deployment failed for ${messageId} after ${RETRIES} retries`);
-    }
+            // Execute the query with retries/sleeps
+            let RETRIES = 200, WAIT_SECONDS = 15
+            const success = await isDeploymentSuccessful(messageId, RETRIES, WAIT_SECONDS)
+            if (!success) {
+                process.exit(1)
+            }
+        })
 
-    console.log(`Successfully install New Relic for instanceId ${messageId}!`)
+        res.on('error', (err) => {
+            console.error(`Error calling URL: ${err}`)
+        })
+    })
 }
 
 if (require.main === module) {
-    main().then(() => {
-        console.log('::set-output name=exit_status::0')
-    }).catch((err) => {
-        console.error(`::error::${err}`)
-        console.error('::set-output name=exit_status::1')
-    })
+    main()
 }
