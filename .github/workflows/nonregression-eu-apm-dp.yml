@@ -153,7 +153,7 @@ jobs:
         run: |
           node main.js
         env:
-          TEST_DEFINITION_URL: $(echo $MATRIX | jq -c -r '.testDefinitionFile')
+          TEST_DEFINITION_URL: ${{ matrix.testDefinitionFile }}
           AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_REGION }}
