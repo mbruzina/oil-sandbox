@@ -73,7 +73,7 @@ function sleep(ms) {
 }
 
 function main() {
-    const executeTest = async (json) => {
+    fetch(`/home/runner/work/oil-sandbox/oil-sandbox/.github/workflows/${process.env.TEST_DEFINITION_FILE}`).then(async (json) => {
         let messageId
         try {
             const command = new SendMessageCommand({
@@ -93,13 +93,9 @@ function main() {
         if (!success) {
             process.exit(1)
         }
-    }
-
-    executeTest().then((data) => {
-        console.log(`Test completed!: ${data}`)
-    }, (error) => {
-        console.log(`Error :${error}`)
-    })
+    }).catch((error) =>
+        console.log(`Test execution failed for ${process.env.TEST_DEFINITION_FILE}: ${error}`)
+    )
 }
 
 if (require.main === module) {
