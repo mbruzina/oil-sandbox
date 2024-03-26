@@ -73,12 +73,12 @@ function sleep(ms) {
 }
 
 function main() {
-    const execTest = async () => {
+    fetch(process.env.TEST_DEFINITION_FILE).then(async (json) => {
         let messageId
         try {
             const command = new SendMessageCommand({
                 QueueUrl: SQS_URL,
-                MessageBody: process.env.TEST_DEFINITION_FILE,
+                MessageBody: json,
             })
             data = await sqs.send(command)
             messageId = data.MessageId
@@ -93,15 +93,8 @@ function main() {
         if (!success) {
             process.exit(1)
         }
-    }
-
-    execTest().then(
-        () => {
-            console.log(`Test completed for ${process.env.TEST_DEFINITION_FILE}`)
-        },
-        (error) => {
-            console.error(`Test errored for ${process.env.TEST_DEFINITION_FILE}: ${error}`)
-        }
+    }).catch((error) =>
+        console.log(`Test execution failed for ${process.env.TEST_DEFINITION_FILE}: ${error}`)
     )
 }
 
