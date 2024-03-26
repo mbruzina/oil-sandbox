@@ -79,7 +79,7 @@ async function getDeployConfigFile(file) {
 }
 
 function main() {
-    getDeployConfigFile(`${process.env.GITHUB_WORKSPACE}${process.env.TEST_DEFINITION_FILE}`)
+    getDeployConfigFile(`${process.env.GITHUB_WORKSPACE}/${process.env.TEST_DEFINITION_FILE}`)
         .then(async (json) => {
             let messageId
             try {
