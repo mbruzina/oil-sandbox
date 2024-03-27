@@ -70,7 +70,7 @@ jobs:
                 }));
                 return Array.prototype.concat(...files);
             }
-            const definitionsDir = 'test/definitions-eu';
+            const definitionsDir = 'test/definitions';
             const testDefinitions = await getFiles(definitionsDir + '/' + `${FOLDER}`);
 
             const outputTestFilesMap = testDefinitions.map(testDefinitionFile => {
