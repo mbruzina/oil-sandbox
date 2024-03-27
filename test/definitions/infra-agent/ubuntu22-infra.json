@@ -18,7 +18,7 @@
   "services": [
     {
       "id": "dumper",
-      "resource_ids": [
+      "destinations": [
         "host1"
       ],
       "source_repository": "https://github.com/mbruzina/oil-sandbox.git",
