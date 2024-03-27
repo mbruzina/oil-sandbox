@@ -1,8 +1,6 @@
 ---
-- name: Debug sanity check
-  ansible.builtin.debug:
+- debug:
     msg: "hello cleveland"
 
-- name: Dump OS facts
-  ansible.builtin.debug:
+- debug:
     msg: All the things {{ ansible_facts }}
