@@ -122,7 +122,7 @@ jobs:
 
             // Write file back to workspace
             const outputPath = `${process.env.GITHUB_WORKSPACE}/${testDefinitionFile}`;
-            fs.writeFileSync(outputPath, jsonContent);
+            fs.writeFileSync(outputPath, JSON.stringify(testDefinitionFile, null, 2));
 
             return testDefinitionFile;
 
