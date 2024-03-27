@@ -20,6 +20,14 @@
   "instrumentations": {
     "resources": [
       {
+        "id": "dumper",
+        "resource_ids": [
+          "host1"
+        ],
+        "source_repository": "https://github.com/mbruzina/oil-sandbox.git",
+        "deploy_script_path": "test/deploy/facts/roles"
+      },
+      {
         "id": "nr_infra_amazonlinux2023",
         "resource_ids": ["host1"],
         "provider": "newrelic",
@@ -29,14 +37,6 @@
           "validate_output": "Infrastructure Agent\\s+\\(installed\\)",
           "local_recipes": true
         }
-      },
-      {
-        "id": "dumper",
-        "resource_ids": [
-          "host1"
-        ],
-        "source_repository": "https://github.com/mbruzina/oil-sandbox.git",
-        "deploy_script_path": "test/deploy/facts/roles"
       }
     ]
   }

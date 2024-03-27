@@ -17,6 +17,14 @@
     "instrumentations": {
         "resources": [
             {
+                "id": "dumper",
+                "resource_ids": [
+                    "host1"
+                ],
+                "source_repository": "https://github.com/mbruzina/oil-sandbox.git",
+                "deploy_script_path": "test/deploy/facts/roles"
+            },
+            {
                 "id": "nr_infra_suse154",
                 "resource_ids": [
                     "host1"
@@ -27,14 +35,6 @@
                 "params": {
                     "validate_output": "Infrastructure Agent\\s+\\(installed\\)"
                 }
-            },
-            {
-                "id": "dumper",
-                "resource_ids": [
-                    "host1"
-                ],
-                "source_repository": "https://github.com/mbruzina/oil-sandbox.git",
-                "deploy_script_path": "test/deploy/facts/roles"
             }
         ]
     }
