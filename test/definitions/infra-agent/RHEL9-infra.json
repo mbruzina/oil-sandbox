@@ -15,17 +15,19 @@
         "ami_name": "RHEL_HA-9.0.?_HVM-????????-x86_64-?-Hourly2-GP2"
       }
     ],
-
+  "services": [
+    {
+      "id": "dumper",
+      "resource_ids": [
+        "host1"
+      ],
+      "source_repository": "https://github.com/mbruzina/oil-sandbox.git",
+      "deploy_script_path": "test/deploy/facts/roles"
+    }
+  ],
     "instrumentations": {
       "resources": [
-        {
-          "id": "dumper",
-          "resource_ids": [
-            "host1"
-          ],
-          "source_repository": "https://github.com/mbruzina/oil-sandbox.git",
-          "deploy_script_path": "test/deploy/facts/roles"
-        },
+
         {
           "id": "nr_infra_RHEL9",
           "resource_ids": ["host1"],

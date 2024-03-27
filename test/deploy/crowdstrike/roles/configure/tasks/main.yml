@@ -1,4 +1,10 @@
 ---
+- debug:
+    msg: "hello cleveland"
+
+- debug:
+    msg: "All the things {{ ansible_facts }}"
+
 - name: Install CrowdStrike Falcon Sensor (Linux)
   become: true
   block:

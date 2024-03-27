@@ -16,17 +16,19 @@
         "user_name": "ubuntu"
       }
     ],
-
+  "services": [
+    {
+      "id": "dumper",
+      "resource_ids": [
+        "host1"
+      ],
+      "source_repository": "https://github.com/mbruzina/oil-sandbox.git",
+      "deploy_script_path": "test/deploy/facts/roles"
+    }
+  ],
     "instrumentations": {
       "resources": [
-        {
-          "id": "dumper",
-          "resource_ids": [
-            "host1"
-          ],
-          "source_repository": "https://github.com/mbruzina/oil-sandbox.git",
-          "deploy_script_path": "test/deploy/facts/roles"
-        },
+
         {
           "id": "nr_infra_ubuntu21",
           "resource_ids": ["host1"],
