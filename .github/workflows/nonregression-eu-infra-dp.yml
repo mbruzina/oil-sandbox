@@ -1,37 +1,56 @@
-name: 'Non Regression Testing (EU) - OTel'
+name: 'Non Regression Testing (EU) - Infra'
 
 on:
   workflow_dispatch:
+#  schedule:
+#    - cron: "0 11 * * 1-5"
 
 env:
-  FOLDER: otel
+  FOLDER: infra-agent
 
 jobs:
   log-context:
     name: Contexts
     runs-on: ubuntu-latest
     steps:
-      - name: GitHub
+      # Dump all contexts
+      - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
-      - name: Runner
+      - name: Dump job context
+        env:
+          JOB_CONTEXT: ${{ toJson(job) }}
+        run: echo "$JOB_CONTEXT"
+      - name: Dump steps context
+        env:
+          STEPS_CONTEXT: ${{ toJson(steps) }}
+        run: echo "$STEPS_CONTEXT"
+      - name: Dump runner context
         env:
           RUNNER_CONTEXT: ${{ toJson(runner) }}
         run: echo "$RUNNER_CONTEXT"
+      - name: Dump strategy context
+        env:
+          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
+        run: echo "$STRATEGY_CONTEXT"
+      - name: Dump matrix context
+        env:
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
+        run: echo "$MATRIX_CONTEXT"
 
-  get-files:
+  get-test-definition-files:
     name: Test Definition Files
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.get-files.outputs.result }}
+      matrix: ${{ steps.get-test-definition-files.outputs.result }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Get Files
-        id: get-files
+      - name: Get Test Definition Files
+        id: get-test-definition-files
         uses: actions/github-script@v6
         with:
           script: |
@@ -62,13 +81,14 @@ jobs:
             }
             console.log(output);
             return output;
+
   test-deploy-recipe:
     name: ${{ matrix.testDisplayName }}
-    needs: [get-files]
-    if: ${{ fromJSON(needs.get-files.outputs.matrix).include[0] }} # Avoids empty matrix validation error
+    needs: [get-test-definition-files]
+    if: ${{ fromJSON(needs.get-test-definition-files.outputs.matrix).include[0] }} # Avoids empty matrix validation error
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJSON(needs.get-files.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.get-test-definition-files.outputs.matrix) }}
       fail-fast: false
     env:
       MATRIX: ${{ toJSON(matrix) }}
@@ -78,8 +98,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Update Files URLs
-        id: get-files
+      - name: Update Test Definition Files URLs
+        id: get-test-definition-files
         env:
           TEST_DEFINITION_FILE: ${{ matrix.testDefinitionFile }}
         uses: actions/github-script@v6
@@ -123,21 +143,22 @@ jobs:
 
             return testDefinitionFile;
 
-      - name: Install Test Dependencies
-        working-directory: .github/workflows/scripts/dp
+      - name: Install npm dependencies for deployer test runner
+        working-directory: .github/workflows/scripts/deployer-platform
         run: npm install
 
-      - name: Run Test
+      - name: Execute test
         id: runDeployerPlatformTest
-        working-directory: .github/workflows/scripts/dp
+        working-directory: .github/workflows/scripts/deployer-platform
         run: |
           node main.js
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          SQS_URL: ${{ secrets.SQS_URL }}
-          DYNAMO_TABLE: ${{ secrets.DYNAMO_TABLE }}
+          TEST_DEFINITION_FILE: ${{ matrix.testDefinitionFile }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_REGION }}
+          SQS_URL: ${{ secrets.DEPLOYER_PLATFORM_US_SQS_URL }}
+          DYNAMO_TABLE: ${{ secrets.DEPLOYER_PLATFORM_US_DYNAMO_TABLE }}
 
       - name: Report any error
         if: steps.runDeployerPlatformTest.outputs.exit_status != 0

@@ -1,12 +1,16 @@
-name: Non Regression Testing (dp)(EU)
+name: 'Non Regression Testing (EU) - Logging'
 
 on:
   workflow_dispatch:
 #  schedule:
 #    - cron: "0 11 * * 1-5"
 
+env:
+  FOLDER: logging
+
 jobs:
   log-context:
+    name: Contexts
     runs-on: ubuntu-latest
     steps:
       # Dump all contexts
@@ -34,24 +38,27 @@ jobs:
         env:
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
         run: echo "$MATRIX_CONTEXT"
+
   get-test-definition-files:
-    name: Get Test Definition Files
+    name: Test Definition Files
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.get-test-definition-files.outputs.result }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Get Test Definition Files
         id: get-test-definition-files
-        uses: actions/github-script@v3
+        uses: actions/github-script@v6
         with:
           script: |
             const fs = require('fs');
             const fsp = fs.promises;
             const path = require('path');
+
+            const { FOLDER } = process.env
 
             // readdir recursive directory search
             const { readdir } = fsp;
@@ -63,8 +70,8 @@ jobs:
                 }));
                 return Array.prototype.concat(...files);
             }
-            const definitionsDir = 'test/definitions-eu'
-            const testDefinitions = await getFiles(definitionsDir);
+            const definitionsDir = 'test/definitions-eu';
+            const testDefinitions = await getFiles(definitionsDir + '/' + `${FOLDER}`);
 
             const outputTestFilesMap = testDefinitions.map(testDefinitionFile => {
                 return { testDefinitionFile, 'testDisplayName': testDefinitionFile.replace(`${definitionsDir}/`, '') }
@@ -83,12 +90,11 @@ jobs:
     strategy:
       matrix: ${{ fromJSON(needs.get-test-definition-files.outputs.matrix) }}
       fail-fast: false
-      max-parallel: 20
     env:
       MATRIX: ${{ toJSON(matrix) }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -96,7 +102,7 @@ jobs:
         id: get-test-definition-files
         env:
           TEST_DEFINITION_FILE: ${{ matrix.testDefinitionFile }}
-        uses: actions/github-script@v3
+        uses: actions/github-script@v6
         with:
           script: |
             const fs = require('fs');
@@ -137,32 +143,34 @@ jobs:
 
             return testDefinitionFile;
 
-      - name: Install Test Dependencies
-        working-directory: .github/workflows/scripts/dp
+      - name: Install npm dependencies for deployer test runner
+        working-directory: .github/workflows/scripts/deployer-platform
         run: npm install
 
-      - name: Run Test
+      - name: Execute test
         id: runDeployerPlatformTest
-        working-directory: .github/workflows/scripts/dp
+        working-directory: .github/workflows/scripts/deployer-platform
         run: |
           node main.js
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          SQS_URL: ${{ secrets.SQS_URL }}
-          DYNAMO_TABLE: ${{ secrets.DYNAMO_TABLE }}
+          TEST_DEFINITION_FILE: ${{ matrix.testDefinitionFile }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_REGION }}
+          SQS_URL: ${{ secrets.DEPLOYER_PLATFORM_US_SQS_URL }}
+          DYNAMO_TABLE: ${{ secrets.DEPLOYER_PLATFORM_US_DYNAMO_TABLE }}
 
       - name: Report any error
         if: steps.runDeployerPlatformTest.outputs.exit_status != 0
         run: exit 1
 
 #  slack-notify:
+#    name: Slack
 #    runs-on: ubuntu-latest
 #    needs: [test-deploy-recipe]
 #    if: always()
 #    steps:
-#      - name: Build Result Slack Notification
+#      - name: Build Result Notification
 #        uses: 8398a7/action-slack@v3
 #        with:
 #          author_name: GitHub Actions
