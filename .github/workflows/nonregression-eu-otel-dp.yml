@@ -154,11 +154,11 @@ jobs:
           node main.js
         env:
           TEST_DEFINITION_FILE: ${{ matrix.testDefinitionFile }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.DEPLOYER_PLATFORM_US_AWS_REGION }}
-          SQS_URL: ${{ secrets.DEPLOYER_PLATFORM_US_SQS_URL }}
-          DYNAMO_TABLE: ${{ secrets.DEPLOYER_PLATFORM_US_DYNAMO_TABLE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOYER_PLATFORM_EU_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOYER_PLATFORM_EU_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.DEPLOYER_PLATFORM_EU_AWS_REGION }}
+          SQS_URL: ${{ secrets.DEPLOYER_PLATFORM_EU_SQS_URL }}
+          DYNAMO_TABLE: ${{ secrets.DEPLOYER_PLATFORM_EU_DYNAMO_TABLE }}
 
       - name: Report any error
         if: steps.runDeployerPlatformTest.outputs.exit_status != 0
